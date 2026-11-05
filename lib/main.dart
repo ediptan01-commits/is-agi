@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'community.dart';
+part 'visual_v02.dart';
 
 const professions = ['İnşaat ustası','Elektrikçi','Tesisatçı','Alçıpan ustası','Sıva ustası','Mimar','Mühendis','Öğretmen','Yazılımcı','Tasarımcı','Kuaför','Nakliyeci','Muhasebeci','Diğer'];
 final db = Supabase.instance.client;
@@ -29,7 +30,7 @@ class App extends StatelessWidget {
   const App({super.key});
   @override Widget build(BuildContext context) => MaterialApp(
     title: 'İş Ağı', debugShowCheckedModeBanner: false, navigatorObservers: [communityRoutes],
-    theme: ThemeData(useMaterial3:true,colorScheme:ColorScheme.fromSeed(seedColor: const Color(0xff1858a7)),scaffoldBackgroundColor:const Color(0xfff5f7fb),inputDecorationTheme:const InputDecorationTheme(border:OutlineInputBorder(),contentPadding:EdgeInsets.symmetric(horizontal:12,vertical:13))),
+    theme: ThemeData(useMaterial3:true,colorScheme:ColorScheme.fromSeed(seedColor: const Color(0xff073765)),scaffoldBackgroundColor:const Color(0xfff3f6fa),cardTheme:CardThemeData(color:Colors.white,elevation:1,shadowColor:const Color(0x16073565),shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(18))),inputDecorationTheme:const InputDecorationTheme(border:OutlineInputBorder(),contentPadding:EdgeInsets.symmetric(horizontal:12,vertical:13))),
     home: StreamBuilder<AuthState>(stream:db.auth.onAuthStateChange,builder:(context,snapshot) => db.auth.currentUser == null ? const AuthPage() : const Shell()),
   );
 }
@@ -51,10 +52,43 @@ class _AuthPageState extends State<AuthPage> {
 }
 
 class Shell extends StatefulWidget {const Shell({super.key});@override State<Shell> createState()=>_ShellState();}
-class _ShellState extends State<Shell> {int selected=0; @override Widget build(BuildContext c){final pages=[const FeedPage(),const JobsPage(),const DiscoverPage(),const InboxPage(),ProfilePage(userId:me)];return Scaffold(appBar:AppBar(title:const Text('İş Ağı',style:TextStyle(fontWeight:FontWeight.bold)),actions:[const NotificationBell(),IconButton(tooltip:'Çıkış',onPressed:()=>db.auth.signOut(),icon:const Icon(Icons.logout))]),body:pages[selected],bottomNavigationBar:NavigationBar(selectedIndex:selected,onDestinationSelected:(v)=>setState(()=>selected=v),destinations:const [NavigationDestination(icon:Icon(Icons.dynamic_feed_outlined),label:'Akış'),NavigationDestination(icon:Icon(Icons.work_outline),label:'İşler'),NavigationDestination(icon:Icon(Icons.search),label:'Keşfet'),NavigationDestination(icon:Icon(Icons.chat_bubble_outline),label:'Mesajlar'),NavigationDestination(icon:Icon(Icons.person_outline),label:'Profil')]));}}
+class _ShellState extends State<Shell> {
+ int selected=0;
+ int revision=0;
+ Future<void> createPost()async{
+  final action=await showModalBottomSheet<String>(context:context,showDragHandle:true,builder:(c)=>SafeArea(child:Column(mainAxisSize:MainAxisSize.min,children:[
+   const ListTile(title:Text('Paylaşım oluştur',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold))),
+   ListTile(leading:const Icon(Icons.add_photo_alternate_outlined),title:const Text('Sosyal gönderi'),onTap:()=>Navigator.pop(c,'post')),
+   ListTile(leading:const Icon(Icons.auto_stories_outlined),title:const Text('Hikâye'),onTap:()=>Navigator.pop(c,'story')),
+   ListTile(leading:const Icon(Icons.work_outline),title:const Text('İş ilanı'),onTap:()=>Navigator.pop(c,'job')),
+  ])));
+  if(!mounted||action==null)return;
+  if(action=='job'){setState(()=>selected=1);return;}
+  final ok=await Navigator.push<bool>(context,MaterialPageRoute(builder:(_)=>CommunityComposer(story:action=='story')));
+  if(ok==true&&mounted)setState(()=>revision++);
+ }
+ @override Widget build(BuildContext c){
+  final pages=[FeedPage(key:ValueKey('feed-$revision')),const JobsPage(),const DiscoverPage(),const InboxPage(),ProfilePage(key:ValueKey('profile-$revision'),userId:me)];
+  return Scaffold(
+   appBar:AppBar(backgroundColor:iaNavy,foregroundColor:Colors.white,
+    title:const Row(mainAxisSize:MainAxisSize.min,children:[Icon(Icons.hub_rounded),SizedBox(width:9),Text('İş Ağı',style:TextStyle(fontWeight:FontWeight.w800,fontSize:24))]),
+    actions:[const NotificationBell(),IconButton(tooltip:'Ara',onPressed:()=>setState(()=>selected=2),icon:const Icon(Icons.search)),IconButton(tooltip:'Çıkış',onPressed:()=>db.auth.signOut(),icon:const Icon(Icons.logout))]),
+   body:pages[selected],
+   bottomNavigationBar:SafeArea(top:false,child:Container(padding:const EdgeInsets.symmetric(vertical:7,horizontal:3),decoration:const BoxDecoration(color:Colors.white,boxShadow:[BoxShadow(color:Color(0x16073565),blurRadius:13,offset:Offset(0,-3))]),child:Row(children:[
+    _nav(0,Icons.home_outlined,Icons.home,'Akış'),
+    _nav(1,Icons.work_outline,Icons.work,'İşler'),
+    Expanded(child:Center(child:FloatingActionButton.small(heroTag:'main-share',onPressed:createPost,tooltip:'Paylaş',shape:const CircleBorder(),backgroundColor:iaBlue,foregroundColor:Colors.white,child:const Icon(Icons.add,size:30)))),
+    _nav(2,Icons.explore_outlined,Icons.explore,'Keşfet'),
+    _nav(3,Icons.chat_bubble_outline,Icons.chat_bubble,'Mesajlar'),
+    _nav(4,Icons.person_outline,Icons.person,'Profil'),
+   ]))),
+  );
+ }
+ Widget _nav(int i,IconData regular,IconData active,String label)=>Expanded(child:InkWell(onTap:()=>setState(()=>selected=i),child:Padding(padding:const EdgeInsets.symmetric(vertical:6),child:Column(mainAxisSize:MainAxisSize.min,children:[Icon(selected==i?active:regular,size:22,color:selected==i?iaBlue:const Color(0xff5c6877)),const SizedBox(height:4),Text(label,style:TextStyle(fontSize:10,fontWeight:selected==i?FontWeight.bold:FontWeight.w500,color:selected==i?iaBlue:const Color(0xff5c6877)))]))));
+}
 
 class LoadList extends StatelessWidget {final Future<List<Map<String,dynamic>>> Function() future;final Widget Function(Map<String,dynamic>) item;final String empty;const LoadList({super.key,required this.future,required this.item,this.empty='Henüz içerik yok.'}); @override Widget build(BuildContext c)=>FutureBuilder<List<Map<String,dynamic>>>(future:future(),builder:(c,s){if(s.hasError)return Center(child:Text('Yükleme hatası: ${s.error}'));if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return Center(child:Text(empty));return ListView.builder(padding:const EdgeInsets.all(12),itemCount:s.data!.length,itemBuilder:(c,i)=>item(s.data![i]));});}
-Widget panel(Widget child)=>Card(margin:const EdgeInsets.only(bottom:12),child:Padding(padding:const EdgeInsets.all(14),child:child));
+Widget panel(Widget child)=>Card(margin:const EdgeInsets.only(bottom:12),child:Padding(padding:const EdgeInsets.all(16),child:child));
 Future<Map<String,dynamic>> profile(String id) async => row(await db.from('profiles').select().eq('id',id).single());
 Future<void> editText(BuildContext context,{required String title,required Future<void> Function(String) save,String hint=''})async{
  final ctrl=TextEditingController();final value=await showDialog<String>(context:context,builder:(c)=>AlertDialog(title:Text(title),content:TextField(controller:ctrl,maxLines:4,maxLength:1000,decoration:InputDecoration(hintText:hint)),actions:[TextButton(onPressed:()=>Navigator.pop(c),child:const Text('Vazgeç')),FilledButton(onPressed:()=>Navigator.pop(c,ctrl.text.trim()),child:const Text('Gönder'))]));ctrl.dispose();if(value!=null&&value.isNotEmpty&&context.mounted){await runSafe(context,()=>save(value));}
@@ -78,5 +112,15 @@ class _DiscoverPageState extends State<DiscoverPage>{String q='';@override Widge
 
 class ProfilePage extends StatefulWidget{final String userId;const ProfilePage({super.key,required this.userId});@override State<ProfilePage>createState()=>_ProfilePageState();}
 class _ProfilePageState extends State<ProfilePage>{int tick=0;bool? following;Future<void> edit(BuildContext c,Map<String,dynamic> p)async{final name=TextEditingController(text:p['full_name']),city=TextEditingController(text:p['city']),bio=TextEditingController(text:p['bio']),skills=TextEditingController(text:(p['skills'] as List? ?? []).join(', '));String job=professions.contains(p['profession'])?p['profession']:'Diğer';bool available=p['available']==true;await showDialog(context:c,builder:(d)=>StatefulBuilder(builder:(d,setLocal)=>AlertDialog(title:const Text('Profili düzenle'),content:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[TextField(controller:name,decoration:const InputDecoration(labelText:'Ad soyad')),const SizedBox(height:8),DropdownButtonFormField<String>(initialValue:job,items:professions.map((x)=>DropdownMenuItem(value:x,child:Text(x))).toList(),onChanged:(v)=>setLocal(()=>job=v??job),decoration:const InputDecoration(labelText:'Meslek')),const SizedBox(height:8),TextField(controller:skills,decoration:const InputDecoration(labelText:'Yetenekler (virgülle ayırın)')),const SizedBox(height:8),TextField(controller:city,decoration:const InputDecoration(labelText:'Şehir')),const SizedBox(height:8),TextField(controller:bio,maxLines:3,decoration:const InputDecoration(labelText:'Hakkımda')),SwitchListTile(title:const Text('İşe müsaitim'),value:available,onChanged:(v)=>setLocal(()=>available=v))])),actions:[TextButton(onPressed:()=>Navigator.pop(d),child:const Text('Vazgeç')),FilledButton(onPressed:()async{await runSafe(c,()async{await db.from('profiles').update({'full_name':name.text.trim(),'profession':job,'skills':skills.text.split(',').map((s)=>s.trim()).where((s)=>s.isNotEmpty).toList(),'city':city.text.trim(),'bio':bio.text.trim(),'available':available}).eq('id',me);if(d.mounted)Navigator.pop(d);setState(()=>tick++);});},child:const Text('Kaydet'))])));name.dispose();city.dispose();bio.dispose();skills.dispose();}
- @override Widget build(BuildContext c)=>Scaffold(body:FutureBuilder<Map<String,dynamic>>(key:ValueKey(tick),future:profile(widget.userId),builder:(c,s){if(s.hasError)return Center(child:Text('Profil görüntülenemedi: ${s.error}'));if(!s.hasData)return const Center(child:CircularProgressIndicator());final p=s.data!;return ListView(padding:const EdgeInsets.all(16),children:[panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const CircleAvatar(radius:32,child:Icon(Icons.person,size:32)),const SizedBox(height:8),Text('${p['full_name']}',style:Theme.of(c).textTheme.headlineSmall),Text('${p['profession']} • ${p['city']}'),if(p['available']==true)const Chip(label:Text('İşe müsait')),const SizedBox(height:8),Text('${p['bio']}'),ProfileSocialStats(userId:widget.userId),Text('Yetenekler: ${(p['skills'] as List? ?? []).join(', ')}'),const SizedBox(height:8),if(widget.userId==me)FilledButton.tonal(onPressed:()=>edit(c,p),child:const Text('Profili düzenle'))else Wrap(spacing:8,children:[FollowButton(userId:widget.userId),FilledButton(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>ChatPage(otherId:widget.userId,name:'${p['full_name']}'))),child:const Text('Mesaj')),PopupMenuButton<String>(onSelected:(value)async{if(value=='report'){await editText(c,title:'Kullanıcıyı şikâyet et',save:(reason)async{await db.from('reports').insert({'reporter_id':me,'target_user_id':widget.userId,'reason':reason});});}else{await runSafe(c,()async{final existing=await db.from('blocks').select('blocked_id').eq('blocker_id',me).eq('blocked_id',widget.userId);if((existing as List).isEmpty){await db.from('blocks').insert({'blocker_id':me,'blocked_id':widget.userId});}else{await db.from('blocks').delete().eq('blocker_id',me).eq('blocked_id',widget.userId);}if(c.mounted)Navigator.pop(c);});}},itemBuilder:(_)=>[const PopupMenuItem(value:'block',child:Text('Engelle / engeli kaldır')),const PopupMenuItem(value:'report',child:Text('Şikâyet et'))])])])),const Text('Paylaşımlar',style:TextStyle(fontWeight:FontWeight.bold,fontSize:19)),const SizedBox(height:8),FutureBuilder<List<dynamic>>(future:db.from('posts').select('id,author_id,body,image_url,video_url,created_at').eq('author_id',widget.userId).order('created_at',ascending:false),builder:(c,s){if(s.hasError)return const Text('Paylaşımlar yüklenemedi.');return s.hasData?Column(children:s.data!.map((x)=>PostTile(key:ValueKey(x['id']),post:{...row(x),'profiles':p},onChange:()=>setState(()=>tick++))).toList()):const Center(child:CircularProgressIndicator());})]);}));}
+ @override Widget build(BuildContext c)=>Scaffold(body:FutureBuilder<Map<String,dynamic>>(key:ValueKey(tick),future:profile(widget.userId),builder:(c,s){if(s.hasError)return Center(child:Text('Profil görüntülenemedi: ${s.error}'));if(!s.hasData)return const Center(child:CircularProgressIndicator());final p=s.data!;return ListView(padding:const EdgeInsets.fromLTRB(12,12,12,24),children:[
+ profileCover(p),const SizedBox(height:12),
+ profileDetails(p,widget.userId),
+ const SizedBox(height:12),
+ panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[
+  const Text('Mesleki bağlantılar',style:TextStyle(fontWeight:FontWeight.w800,fontSize:17,color:iaNavy)),
+  const SizedBox(height:8),ProfileSocialStats(userId:widget.userId),
+  const SizedBox(height:12),if(widget.userId==me)FilledButton.tonal(onPressed:()=>edit(c,p),child:const Text('Profili düzenle'))else Wrap(spacing:8,children:[FollowButton(userId:widget.userId),FilledButton(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>ChatPage(otherId:widget.userId,name:'${p['full_name']}'))),child:const Text('Mesaj')),PopupMenuButton<String>(onSelected:(value)async{if(value=='report'){await editText(c,title:'Kullanıcıyı şikâyet et',save:(reason)async{await db.from('reports').insert({'reporter_id':me,'target_user_id':widget.userId,'reason':reason});});}else{await runSafe(c,()async{final existing=await db.from('blocks').select('blocked_id').eq('blocker_id',me).eq('blocked_id',widget.userId);if((existing as List).isEmpty){await db.from('blocks').insert({'blocker_id':me,'blocked_id':widget.userId});}else{await db.from('blocks').delete().eq('blocker_id',me).eq('blocked_id',widget.userId);}if(c.mounted)Navigator.pop(c);});}},itemBuilder:(_)=>[const PopupMenuItem(value:'block',child:Text('Engelle / engeli kaldır')),const PopupMenuItem(value:'report',child:Text('Şikâyet et'))])])
+ ])),
+ const SizedBox(height:12),
+ const Text('Paylaşımlar',style:TextStyle(fontWeight:FontWeight.bold,fontSize:19)),const SizedBox(height:8),FutureBuilder<List<dynamic>>(future:db.from('posts').select('id,author_id,body,image_url,video_url,created_at').eq('author_id',widget.userId).order('created_at',ascending:false),builder:(c,s){if(s.hasError)return const Text('Paylaşımlar yüklenemedi.');return s.hasData?Column(children:s.data!.map((x)=>PostTile(key:ValueKey(x['id']),post:{...row(x),'profiles':p},onChange:()=>setState(()=>tick++))).toList()):const Center(child:CircularProgressIndicator());})]);}));}
 
