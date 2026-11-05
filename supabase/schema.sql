@@ -173,8 +173,8 @@ begin
  return new;
 end;
 $$;
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created after insert on auth.users for each row execute function private.new_user_profile();
+drop trigger if exists is_agi_on_auth_user_created on auth.users;
+create trigger is_agi_on_auth_user_created after insert on auth.users for each row execute function private.new_user_profile();
 
 -- Bildirimler istemciden yazılamaz; yalnızca veritabanı tetikler.
 create or replace function private.notify_activity() returns trigger
@@ -212,7 +212,7 @@ end $$;
 
 -- API tabloları kullanılabilir olsun, RLS her işlemde uygulanır.
 grant usage on schema public to authenticated;
-grant select,insert,update,delete on all tables in schema public to authenticated;
+grant select,insert,update,delete on public.profiles, public.blocks, public.posts, public.likes, public.comments, public.follows, public.jobs, public.applications, public.messages, public.notifications, public.reports to authenticated;
 -- İstemcinin bildirim oluşturmasını ve şikayet kayıtlarını okumasını engelle.
 revoke insert,delete on public.notifications from authenticated;
 revoke select,update,delete on public.reports from authenticated;
@@ -227,3 +227,10 @@ create policy "upload own post images" on storage.objects for insert to authenti
  with check(bucket_id='post-media' and (storage.foldername(name))[1]=auth.uid()::text);
 create policy "delete own post images" on storage.objects for delete to authenticated
  using(bucket_id='post-media' and (storage.foldername(name))[1]=auth.uid()::text);
+
+-- Trigger functions must not be callable through application roles.
+revoke all on function private.new_user_profile() from public, anon, authenticated;
+revoke all on function private.notify_activity() from public, anon, authenticated;
+-- Clients may mark notifications as read, but cannot edit their content.
+revoke update on public.notifications from authenticated;
+grant update(is_read) on public.notifications to authenticated;

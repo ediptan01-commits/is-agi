@@ -12,17 +12,15 @@ Flutter ile geliştirilen Türkçe mesleki sosyal ağ ve iş bulma uygulaması.
 - Takip, beğeni, yorum, iş başvurusu ve mesaj için uygulama içi bildirim
 - Satır bazlı veritabanı güvenliği (RLS)
 
-## Kurulum
-1. [Supabase](https://supabase.com/) üzerinden yeni proje oluştur.
-2. SQL Editor'de `supabase/schema.sql` dosyasını çalıştır.
-3. Authentication > Providers altında Email sağlayıcısını etkinleştir. E-posta doğrulaması etkinse gelen kutusundan onayla.
-4. Lokal geliştirme için Flutter SDK kur ve `flutter create --platforms android --org com.teknolojix --project-name is_agi .` çalıştır.
-5. `flutter pub get` ve ardından:
-   `flutter run --dart-define=SUPABASE_URL=https://PROJE.supabase.co --dart-define=SUPABASE_ANON_KEY=YAYIMLANABILIR_ANAHTAR`
-6. GitHub Actions için Repository > Settings > Secrets and variables > Actions içine `SUPABASE_URL` ve `SUPABASE_ANON_KEY` ekle.
-7. GitHub'a push yapıldığında Actions iş akışı Android APK ve AAB üretir. Actions > son çalışma > Artifacts bölümünden indir.
+## Bağlantı ve çalıştırma
+İş Ağı, ayrı İş Ağı kuruluşundaki Supabase projesine bağlanmıştır. `config/client.json` yalnızca yayımlanabilir mobil istemci anahtarını içerir; yönetim anahtarı veya veritabanı şifresi içermez.
 
-`SUPABASE_ANON_KEY` yalnızca yayımlanabilir istemci anahtarı olmalıdır. `service_role` anahtarını **asla** mobil uygulamaya veya istemci Secrets yapılandırmasına ekleme.
+- Çalıştırma: `flutter run --dart-define-from-file=config/client.json`
+- APK: `flutter build apk --release --dart-define-from-file=config/client.json`
+- AAB: `flutter build appbundle --release --dart-define-from-file=config/client.json`
+- E-posta ile kayıt açıktır. İlk girişten önce e-posta doğrulama bağlantısını açın.
+- Veritabanı şeması bu projeye kurulmuştur. `supabase/schema.sql` yeni boş projeye ilk kurulum içindir; mevcut projede tekrar çalıştırmayın.
+- `main` dalına yüklemeler GitHub Actions ile APK ve AAB üretir. Actions > son çalışma > Artifacts bölümünden indirin.
 
 ## Sınırlar / sonraki sürüm
 - v0.1'de bildirimler uygulama içindedir; FCM push bildirimleri yoktur.
