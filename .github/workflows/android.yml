@@ -2,6 +2,7 @@ name: Is Agi Android APK AAB
 on:
   push:
     branches: [main]
+    paths: ['lib/**', 'test/**', 'tool/**', 'config/**', 'pubspec.yaml', 'pubspec.lock', 'analysis_options.yaml', '.github/workflows/android.yml']
   workflow_dispatch:
 permissions:
   contents: read
