@@ -1,4 +1,4 @@
-# İş Ağı v0.1
+# İş Ağı v0.2.0
 
 Flutter ile geliştirilen Türkçe mesleki sosyal ağ ve iş bulma uygulaması.
 
@@ -24,10 +24,17 @@ Flutter ile geliştirilen Türkçe mesleki sosyal ağ ve iş bulma uygulaması.
 
 ## Sınırlar / sonraki sürüm
 - v0.1'de bildirimler uygulama içindedir; FCM push bildirimleri yoktur.
-- Özel mesajlar cihazda periyodik yenilenmez; sohbet ekranını yeniden açarak yenileyebilirsin. Realtime aboneliği sonraki sürüm hedefidir.
-- Fotoğraf yükleme için SQL depolama kurgusu hazır, ancak v0.1 arayüzü yalnızca metin gönderisi yayınlar.
+- Sohbetler ön planda 4 saniyede, sohbet listesi ve bildirimler 8 saniyede, bildirim rozeti 15 saniyede yenilenir. Arka planda push bildirimi yoktur.
+- Fotoğraf (5 MB) ve video (60 saniye / 25 MB) paylaşımı vardır. Gönderi medyaları herkese açık portföy deposundadır. Hikâyeler özel depoda saklanır; erişim 24 saatte sona erer. Süresi dolan dosyaların kalıcı depolamadan temizliği için henüz zamanlanmış görev yoktur.
 - Üretim öncesi spam ve kötüye kullanım önleme, moderatör paneli, veri silme talebi akışı, KVKK metinleri ve güvenlik testi gereklidir.
 - Android imzalama: Actions debug olmayan release çıktısı üretir; Play Store'a yüklemek için kalıcı kendi upload anahtarınla imzalama yapılandırmalısın.
 
 ## Test
 `flutter analyze` ve `flutter test`; Flutter SDK'nın sistemde kurulu olması gereklidir.
+
+## Sosyal medya aşamaları
+1. Fotoğraf önizlemeli paylaşım, herkes/takip edilenler akışı, yenileme, profil takip durumu ve takipçi sayıları.
+2. Mesaj önizlemeleri, otomatik sohbet yenileme, çift gönderim koruması, okunmamış bildirim rozeti ve bildirimden sohbete geçiş.
+3. Video oynatma, 24 saatlik fotoğraf/video hikâyeleri, hikâyeden mesaj ve şikâyet, sahibinin silmesi.
+
+Yeni projede ilk şemadan sonra supabase/social_v02.sql uygulanmalıdır. Mevcut İş Ağı projesinde her iki kurulum tamamlanmıştır. Hikâye süreleri ve engelleme kuralları sunucuda uygulanır.
