@@ -3,7 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:video_player/video_player.dart';
 
-typedef Row = Map<String, dynamic>;
+typedef AdminRecord = Map<String, dynamic>;
 const navy = Color(0xff152b45);
 const blue = Color(0xff245de9);
 const sectionNames = <String, String>{
@@ -15,8 +15,8 @@ const sectionNames = <String, String>{
 abstract class AdminApi {
   Future<void> login(String email, String password);
   Future<void> logout();
-  Future<Row> overview();
-  Future<Row> list(String section, String search, int offset);
+  Future<AdminRecord> overview();
+  Future<AdminRecord> list(String section, String search, int offset);
   Future<void> suspend(String id, bool suspended, String reason);
   Future<void> moderate(String kind, String id, bool hidden, String reason);
   Future<void> review(String id, String status, String note);
@@ -34,8 +34,8 @@ class SupabaseAdminApi implements AdminApi {
     }
   }
   @override Future<void> logout() => client.auth.signOut(scope: SignOutScope.local);
-  @override Future<Row> overview() async => Map<String,dynamic>.from(await client.rpc('admin_overview'));
-  @override Future<Row> list(String section, String search, int offset) async => Map<String,dynamic>.from(
+  @override Future<AdminRecord> overview() async => Map<String,dynamic>.from(await client.rpc('admin_overview'));
+  @override Future<AdminRecord> list(String section, String search, int offset) async => Map<String,dynamic>.from(
     await client.rpc('admin_list', params: {'p_section': section, 'p_search': search, 'p_offset': offset}));
   @override Future<void> suspend(String id, bool suspended, String reason) async {
     await client.rpc('admin_suspend', params: {'p_user': id, 'p_suspended': suspended, 'p_reason': reason});
@@ -128,8 +128,8 @@ class AdminHome extends StatefulWidget {
 class _AdminHomeState extends State<AdminHome> {
   String section = 'overview', search = '';
   final searchText = TextEditingController(), announcement = TextEditingController();
-  Row? summary;
-  List<Row> rows = [];
+  AdminRecord? summary;
+  List<AdminRecord> rows = [];
   int offset = 0, total = 0, generation = 0;
   bool loading = true, acting = false;
   String? error, announcementRequest;
@@ -226,7 +226,7 @@ class _AdminHomeState extends State<AdminHome> {
     if (rows.isEmpty) return ListView(physics: const AlwaysScrollableScrollPhysics(), children: const [Padding(padding: EdgeInsets.all(40), child: Text('Burada henüz kayıt yok.', textAlign: TextAlign.center))]);
     return ListView.builder(physics: const AlwaysScrollableScrollPhysics(), padding: const EdgeInsets.all(12), itemCount: rows.length, itemBuilder: (_, index) => recordCard(rows[index]));
   }
-  Widget recordCard(Row record) {
+  Widget recordCard(AdminRecord record) {
     final id = '${record['id']}';
     if (section == 'users') return Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('${record['full_name'] ?? 'Kullanıcı'}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
@@ -291,7 +291,7 @@ class _ActionReasonState extends State<ActionReason> {
 }
 
 class MediaReview extends StatefulWidget {
-  final Row record;
+  final AdminRecord record;
   final bool story;
   const MediaReview({super.key, required this.record, required this.story});
   @override State<MediaReview> createState() => _MediaReviewState();

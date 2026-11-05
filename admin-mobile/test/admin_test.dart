@@ -9,8 +9,8 @@ class FakeApi implements AdminApi {
   Completer<void>? pending;
   @override Future<void> login(String email, String password) async {logins++;if (pending != null) await pending!.future;if (deny) throw Exception('denied');}
   @override Future<void> logout() async {}
-  @override Future<Row> overview() async => {'users':3,'posts':1,'reports':0,'jobs':0,'stories':0,'suspended':0};
-  @override Future<Row> list(String section, String search, int offset) async => {'rows':<Row>[],'total':0};
+  @override Future<AdminRecord> overview() async => {'users':3,'posts':1,'reports':0,'jobs':0,'stories':0,'suspended':0};
+  @override Future<AdminRecord> list(String section, String search, int offset) async => {'rows':<AdminRecord>[],'total':0};
   @override Future<void> suspend(String id, bool suspended, String reason) async {writes++;}
   @override Future<void> moderate(String kind, String id, bool hidden, String reason) async {writes++;}
   @override Future<void> review(String id, String status, String note) async {writes++;}
