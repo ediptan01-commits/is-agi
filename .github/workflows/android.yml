@@ -1,0 +1,49 @@
+name: Is Agi Android APK AAB
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Android platform dosyalarini olustur
+        run: flutter create --platforms android --org com.teknolojix --project-name is_agi .
+      - name: Android uygulama ayarlari
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          manifest = Path('android/app/src/main/AndroidManifest.xml')
+          text = manifest.read_text()
+          text = text.replace('<application', '<uses-permission android:name="android.permission.INTERNET"/>\n    <application', 1)
+          text = text.replace('android:label="is_agi"', 'android:label="İş Ağı"')
+          manifest.write_text(text)
+          PY
+      - name: Paketleri kur
+        run: flutter pub get
+      - name: Analiz
+        run: flutter analyze --no-fatal-infos
+      - name: Test
+        run: flutter test
+      - name: APK
+        run: flutter build apk --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      - name: AAB
+        run: flutter build appbundle --release --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: is-agi-v0.1-apk-aab
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+          retention-days: 14
