@@ -36,8 +36,9 @@ insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
 create policy "story media upload own" on storage.objects for insert to authenticated
  with check(bucket_id='story-media' and (storage.foldername(name))[1]=auth.uid()::text);
 create policy "story media active viewers" on storage.objects for select to authenticated
- using(bucket_id='story-media' and exists(
+ using(bucket_id='story-media' and ((storage.foldername(name))[1]=auth.uid()::text or exists(
   select 1 from public.stories s where s.media_path=name and s.expires_at>now()
-  and not private.is_blocked(auth.uid(),s.author_id)));
+  and not private.is_blocked(auth.uid(),s.author_id))));
 create policy "story media delete own" on storage.objects for delete to authenticated
  using(bucket_id='story-media' and (storage.foldername(name))[1]=auth.uid()::text);
+
