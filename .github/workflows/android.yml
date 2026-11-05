@@ -45,6 +45,8 @@ jobs:
           assert urlparse(c['SUPABASE_URL']).hostname == 'ikoyhonpgujbughdsouu.supabase.co'
           assert c['SUPABASE_ANON_KEY'].startswith('sb_publishable_')
           PY
+      - name: Canli profil sorgularini dogrula
+        run: python3 tool/check_profile_queries.py
       - name: APK
         run: flutter build apk --release --dart-define-from-file=config/client.json
       - name: AAB
