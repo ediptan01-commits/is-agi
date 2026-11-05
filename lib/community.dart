@@ -209,8 +209,9 @@ class _FeedPageState extends State<FeedPage> {
     if (changed == true && mounted) setState(() => generation++);
   }
   @override Widget build(BuildContext context) => Column(children: [
+    const Padding(padding: EdgeInsets.fromLTRB(16, 12, 16, 3), child: Align(alignment: Alignment.centerLeft, child: Text('Sosyal Akış', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: iaNavy)))),
     Padding(padding: const EdgeInsets.fromLTRB(12, 8, 12, 0), child: SizedBox(width: double.infinity,
-      child: FilledButton.icon(onPressed: compose, icon: const Icon(Icons.add), label: const Text('Bir şeyler paylaş')))),
+      child: FilledButton.icon(onPressed: compose, icon: const Icon(Icons.add), label: const Text('Gönderi paylaş')))),
     StoryStrip(key: ValueKey('stories-$generation'), onAdd: () => compose(story: true)),
     Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Row(children: [
       ChoiceChip(label: const Text('Herkes'), selected: !followingOnly, onSelected: (_) => setState(() => followingOnly = false)),
