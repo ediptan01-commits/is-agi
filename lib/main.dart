@@ -163,7 +163,7 @@ class _PostTileState extends State<PostTile> {
     final isVideo = post['video_url'] != null;
     if (isVideo) {
       return SizedBox(
-        height: widget.reelsHeight,
+        height: widget.reelsHeight ?? MediaQuery.sizeOf(context).height * 0.68,
         width: double.infinity,
         child: Stack(fit: StackFit.expand, children: [
           CommunityVideo(url: post['video_url'].toString(), expandToFill: true),
