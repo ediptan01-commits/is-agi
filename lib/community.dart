@@ -210,8 +210,6 @@ class _FeedPageState extends State<FeedPage> {
   }
   @override Widget build(BuildContext context) => Column(children: [
     const Padding(padding: EdgeInsets.fromLTRB(16, 12, 16, 3), child: Align(alignment: Alignment.centerLeft, child: Text('Sosyal Akış', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: iaNavy)))),
-    Padding(padding: const EdgeInsets.fromLTRB(12, 8, 12, 0), child: SizedBox(width: double.infinity,
-      child: FilledButton.icon(onPressed: compose, icon: const Icon(Icons.add), label: const Text('Gönderi paylaş')))),
     StoryStrip(key: ValueKey('stories-$generation'), onAdd: () => compose(story: true)),
     Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Row(children: [
       ChoiceChip(label: const Text('Herkes'), selected: !followingOnly, onSelected: (_) => setState(() => followingOnly = false)),
@@ -232,56 +230,104 @@ class CommunityVideo extends StatefulWidget {
 }
 class _CommunityVideoState extends State<CommunityVideo> with WidgetsBindingObserver, RouteAware {
   VideoPlayerController? controller;
-  bool loading = false;
+  bool loading = true;
+  bool playing = false;
   Object? error;
-  Future<void> start() async {
-    if (loading) return;
-    if (controller != null && error == null) {
-      if (controller!.value.isPlaying) { await controller!.pause(); } else {
-        if (playingCommunityVideo != controller) await playingCommunityVideo?.pause();
-        playingCommunityVideo = controller;
-        await controller!.play();
-      }
-      if (mounted) setState(() {});
-      return;
-    }
-    setState(() { loading = true; error = null; });
-    await controller?.dispose();
+  @override void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    initializePreview();
+  }
+  Future<void> initializePreview() async {
     final player = VideoPlayerController.networkUrl(Uri.parse(widget.url));
     controller = player;
     try {
       await player.initialize();
-      if (!mounted) return;
-      if (playingCommunityVideo != player) await playingCommunityVideo?.pause();
-      playingCommunityVideo = player;
-      await player.play();
-    } catch (e) { if (mounted) setState(() => error = e); }
-    finally { if (mounted) setState(() => loading = false); }
+      if (mounted) setState(() { loading = false; error = null; });
+    } catch (e) {
+      if (mounted) setState(() { loading = false; error = e; });
+    }
   }
-  @override void initState() { super.initState(); WidgetsBinding.instance.addObserver(this); }
+  Future<void> toggle() async {
+    final player = controller;
+    if (player == null || !player.value.isInitialized) return;
+    try {
+      if (player.value.isPlaying) {
+        await player.pause();
+      } else {
+        if (playingCommunityVideo != player) await playingCommunityVideo?.pause();
+        playingCommunityVideo = player;
+        await player.play();
+      }
+      if (mounted) setState(() => playing = player.value.isPlaying);
+    } catch (e) {
+      if (mounted) setState(() => error = e);
+    }
+  }
+  @override void didUpdateWidget(covariant CommunityVideo oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      final previous = controller;
+      if (playingCommunityVideo == previous) playingCommunityVideo = null;
+      previous?.dispose();
+      controller = null;
+      loading = true;
+      playing = false;
+      error = null;
+      initializePreview();
+    }
+  }
   @override void didChangeDependencies() {
     super.didChangeDependencies();
     final route = ModalRoute.of(context);
     if (route != null) communityRoutes.subscribe(this, route);
   }
-  @override void didPushNext() { controller?.pause(); }
+  @override void didPushNext() { controller?.pause(); if (mounted) setState(() => playing = false); }
   @override void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed) controller?.pause();
+    if (state != AppLifecycleState.resumed) {
+      controller?.pause();
+      if (mounted) setState(() => playing = false);
+    }
   }
   @override void dispose() {
     communityRoutes.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
     if (playingCommunityVideo == controller) playingCommunityVideo = null;
-    controller?.dispose(); super.dispose();
+    controller?.dispose();
+    super.dispose();
   }
-  @override Widget build(BuildContext context) => Column(children: [
-    if (controller?.value.isInitialized == true && error == null)
-      AspectRatio(aspectRatio: controller!.value.aspectRatio, child: VideoPlayer(controller!)),
-    if (error != null) const Text('Video açılamadı. Tekrar deneyebilirsin.'),
-    if (loading) const Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())
-    else TextButton.icon(onPressed: start, icon: Icon(controller?.value.isPlaying == true ? Icons.pause : Icons.play_circle_outline),
-      label: Text(controller?.value.isPlaying == true ? 'Duraklat' : 'Videoyu oynat')),
-  ]);
+  @override Widget build(BuildContext context) {
+    final player = controller;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: AspectRatio(
+        aspectRatio: 16 / 9,
+        child: ColoredBox(
+          color: const Color(0xFF122A43),
+          child: error != null
+            ? const Center(child: Text('Video önizlemesi açılamadı', style: TextStyle(color: Colors.white)))
+            : loading || player == null || !player.value.isInitialized
+              ? const Center(child: CircularProgressIndicator(color: Colors.white))
+              : InkWell(
+                onTap: toggle,
+                child: Stack(fit: StackFit.expand, children: [
+                  FittedBox(fit: BoxFit.cover, child: SizedBox(
+                    width: player.value.size.width,
+                    height: player.value.size.height,
+                    child: VideoPlayer(player),
+                  )),
+                  if (!playing)
+                    Container(color: const Color(0x44000000), alignment: Alignment.center,
+                      child: const Icon(Icons.play_circle_fill, color: Colors.white, size: 58)),
+                  if (playing)
+                    const Positioned(right: 12, bottom: 12,
+                      child: Icon(Icons.pause_circle_filled, color: Colors.white, size: 33)),
+                ]),
+              ),
+        ),
+      ),
+    );
+  }
 }
 
 class FollowButton extends StatefulWidget {
@@ -495,17 +541,17 @@ class _StoryStripState extends State<StoryStrip> {
     finally { fetching = false; }
   }
   @override void dispose() { timer?.cancel(); super.dispose(); }
-  @override Widget build(BuildContext context) => SizedBox(height: 110, child: ListView(scrollDirection: Axis.horizontal,
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), children: [
-      SizedBox(width: 78, child: InkWell(onTap: widget.onAdd, child: const Column(children: [
-        CircleAvatar(radius: 27, child: Icon(Icons.add)), SizedBox(height: 6), Text('Hikâyen', maxLines: 1),
+  @override Widget build(BuildContext context) => SizedBox(height: 88, child: ListView(scrollDirection: Axis.horizontal,
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), children: [
+      SizedBox(width: 72, child: InkWell(onTap: widget.onAdd, child: const Column(children: [
+        CircleAvatar(radius: 23, child: Icon(Icons.add)), SizedBox(height: 4), Text('Hikâyen', maxLines: 1),
       ]))),
       if (failed) TextButton(onPressed: load, child: const Text('Hikâyeleri yenile')),
-      ...stories.map((story) => SizedBox(width: 82, child: InkWell(onTap: () async {
+      ...stories.map((story) => SizedBox(width: 74, child: InkWell(onTap: () async {
         await Navigator.push(context, MaterialPageRoute(builder: (_) => StoryPage(story: story)));
         if (mounted) load();
       }, child: Column(children: [
-        CircleAvatar(radius: 28, backgroundColor: Theme.of(context).colorScheme.primary, child:
+        CircleAvatar(radius: 24, backgroundColor: Theme.of(context).colorScheme.primary, child:
           Icon(story['kind'] == 'video' ? Icons.videocam_outlined : Icons.photo_outlined, color: Colors.white)),
         const SizedBox(height: 6), Text('${row(story['profiles'] ?? {})['full_name'] ?? 'Kullanıcı'}', maxLines: 1, overflow: TextOverflow.ellipsis),
       ])))),
