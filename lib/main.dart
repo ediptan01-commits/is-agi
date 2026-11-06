@@ -95,9 +95,98 @@ Future<void> editText(BuildContext context,{required String title,required Futur
 
 }
 class PostTile extends StatefulWidget {final Map<String,dynamic> post;final VoidCallback onChange;const PostTile({super.key,required this.post,required this.onChange});@override State<PostTile> createState()=>_PostTileState();}
-class _PostTileState extends State<PostTile> {bool? liked;int? count;Future<void> refresh() async{final id=widget.post['id'];final likes=await db.from('likes').select('user_id').eq('post_id',id);if(mounted)setState((){liked=(likes as List).any((x)=>x['user_id']==me);count=likes.length;});}
- @override void initState(){super.initState();runSafe(context,refresh);}
- @override Widget build(BuildContext c){final p=widget.post,author=row(p['profiles']??{});return panel(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[ListTile(contentPadding:EdgeInsets.zero,leading:ProfileAvatar(path:author['avatar_url'] as String?),title:Text('${author['full_name']??'Kullanıcı'}'),subtitle:Text('${author['profession']??''}'),onTap:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>ProfilePage(userId:p['author_id'])))),Text('${p['body']}',style:const TextStyle(fontSize:16)),if(p['image_url']!=null)Padding(padding:const EdgeInsets.only(top:10),child:Image.network(p['image_url'],height:200,errorBuilder:(_,__,___)=>const Text('Fotoğraf yüklenemedi.'))),if(p['video_url']!=null)CommunityVideo(url:p['video_url']),const SizedBox(height:8),Wrap(spacing:5,children:[TextButton.icon(onPressed:p['author_id']==me?null:()async{await runSafe(c,()async{if(liked==true){await db.from('likes').delete().eq('post_id',p['id']).eq('user_id',me);}else{await db.from('likes').insert({'post_id':p['id'],'user_id':me});}await refresh();});},icon:Icon(liked==true?Icons.favorite:Icons.favorite_border),label:Text('${count??0}')),TextButton.icon(onPressed:()=>Navigator.push(c,MaterialPageRoute(builder:(_)=>CommentsPage(postId:p['id']))),icon:const Icon(Icons.comment_outlined),label:const Text('Yorumlar')),PopupMenuButton<String>(tooltip:'İşlemler',onSelected:(v)async{if(v=='report'){await editText(c,title:'Gönderiyi şikâyet et',save:(reason)async{await db.from('reports').insert({'reporter_id':me,'target_post_id':p['id'],'reason':reason});});}else if(v=='delete'){await runSafe(c,()async{await db.from('posts').delete().eq('id',p['id']);widget.onChange();});}},itemBuilder:(_)=>[if(p['author_id']==me)const PopupMenuItem(value:'delete',child:Text('Sil')),const PopupMenuItem(value:'report',child:Text('Şikâyet et'))])]) ]));}
+class _PostTileState extends State<PostTile> {
+  bool? liked;
+  int? count;
+  Future<void> refresh() async {
+    final result = await db.from('likes').select('user_id').eq('post_id', widget.post['id']);
+    if (mounted) setState(() {
+      liked = result.any((entry) => entry['user_id'] == me);
+      count = result.length;
+    });
+  }
+  @override void initState() { super.initState(); runSafe(context, refresh); }
+
+  @override Widget build(BuildContext c) {
+    final p = widget.post;
+    final author = row(p['profiles'] ?? {});
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(padding: const EdgeInsets.fromLTRB(12, 8, 8, 4), child: Row(children: [
+          GestureDetector(
+            onTap: () => Navigator.push(c, MaterialPageRoute(builder: (_) => ProfilePage(userId:p['author_id']))),
+            child: ProfileAvatar(path:author['avatar_url'] as String?)),
+          const SizedBox(width: 10),
+          Expanded(child: InkWell(
+            onTap: () => Navigator.push(c, MaterialPageRoute(builder: (_) => ProfilePage(userId:p['author_id']))),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('${author['full_name']??'Kullanıcı'}',style:const TextStyle(fontSize:15,fontWeight:FontWeight.w700)),
+              Text('${author['profession']??''}',style:const TextStyle(color:Colors.black54,fontSize:12)),
+            ]),
+          )),
+          PopupMenuButton<String>(
+            tooltip:'İşlemler',
+            onSelected:(v) async {
+              if(v=='report') {
+                await editText(c,title:'Gönderiyi şikâyet et',save:(reason)async {
+                  await db.from('reports').insert({'reporter_id':me,'target_post_id':p['id'],'reason':reason});
+                });
+              } else if(v=='delete') {
+                await runSafe(c,()async {
+                  await db.from('posts').delete().eq('id',p['id']);
+                  widget.onChange();
+                });
+              }
+            },
+            itemBuilder:(_) => [
+              if(p['author_id']==me) const PopupMenuItem(value:'delete',child:Text('Sil')),
+              const PopupMenuItem(value:'report',child:Text('Şikâyet et')),
+            ],
+          ),
+        ])),
+        Padding(padding:const EdgeInsets.fromLTRB(14,3,14,10),
+          child:Text('${p['body']}',style:const TextStyle(fontSize:15))),
+        if(p['image_url']!=null)
+          Image.network(p['image_url'],height:240,width:double.infinity,fit:BoxFit.cover,
+            errorBuilder:(_,__,___)=>const Padding(
+              padding:EdgeInsets.all(12),child:Text('Fotoğraf yüklenemedi.'))),
+        if(p['video_url']!=null)
+          Padding(padding:const EdgeInsets.symmetric(horizontal:10),
+            child:CommunityVideo(url:p['video_url'])),
+        Padding(padding:const EdgeInsets.fromLTRB(8,4,8,5),child:Row(children:[
+          IconButton(
+            tooltip:'Beğen',
+            onPressed:p['author_id']==me?null:()async {
+              await runSafe(c,()async {
+                if(liked==true) {
+                  await db.from('likes').delete().eq('post_id',p['id']).eq('user_id',me);
+                } else {
+                  await db.from('likes').insert({'post_id':p['id'],'user_id':me});
+                }
+                await refresh();
+              });
+            },
+            icon:Icon(liked==true?Icons.favorite:Icons.favorite_border,
+              color:liked==true?Colors.redAccent:null),
+          ),
+          Text('${count??0}',style:const TextStyle(fontSize:13)),
+          const SizedBox(width:5),
+          IconButton(
+            tooltip:'Yorum yap',
+            onPressed:()=>Navigator.push(c,MaterialPageRoute(
+              builder:(_)=>CommentsPage(postId:p['id']))),
+            icon:const Icon(Icons.mode_comment_outlined)),
+          const Spacer(),
+          const IconButton(tooltip:'Paylaşım bağlantısı yakında',onPressed:null,
+            icon:Icon(Icons.share_outlined)),
+          const IconButton(tooltip:'Kaydetme özelliği yakında',onPressed:null,
+            icon:Icon(Icons.bookmark_border)),
+        ])),
+      ]),
+    );
+  }
 }
 class CommentsPage extends StatefulWidget {final String postId;const CommentsPage({super.key,required this.postId});@override State<CommentsPage>createState()=>_CommentsPageState();}
 class _CommentsPageState extends State<CommentsPage>{int tick=0;@override Widget build(BuildContext c)=>Scaffold(appBar:AppBar(title:const Text('Yorumlar')),body:Column(children:[Expanded(child:LoadList(key:ValueKey(tick),future:()async=>(await db.from('comments').select('id,author_id,body,profiles!comments_author_id_fkey(full_name)').eq('post_id',widget.postId).order('created_at') as List).map(row).toList(),item:(x)=>panel(ListTile(title:Text('${row(x['profiles']??{})['full_name']??'Kullanıcı'}'),subtitle:Text('${x['body']}'))))),Padding(padding:const EdgeInsets.all(12),child:SizedBox(width:double.infinity,child:FilledButton.icon(onPressed:()=>editText(c,title:'Yorum yaz',save:(t)async{await db.from('comments').insert({'post_id':widget.postId,'author_id':me,'body':t});setState(()=>tick++);}),icon:const Icon(Icons.edit),label:const Text('Yorum ekle'))))]));}
