@@ -193,39 +193,84 @@ class FeedPage extends StatefulWidget {
   @override State<FeedPage> createState() => _FeedPageState();
 }
 class _FeedPageState extends State<FeedPage> {
-  bool followingOnly = false;
   int generation = 0;
+  late Future<List<Map<String, dynamic>>> postsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    postsFuture = load();
+  }
+
   Future<List<Map<String, dynamic>>> load() async {
-    var query = db.from('posts').select('id,author_id,body,image_url,video_url,created_at,profiles!posts_author_id_fkey(full_name,profession,avatar_url)');
-    if (followingOnly) {
-      final follows = await db.from('follows').select('following_id').eq('follower_id', me);
-      final ids = [me, ...follows.map((x) => x['following_id'] as String)];
-      query = query.inFilter('author_id', ids);
-    }
-    return (await query.order('created_at', ascending: false).limit(100)).map(row).toList();
+    final posts = await db.from('posts').select(
+      'id,author_id,body,image_url,video_url,created_at,profiles!posts_author_id_fkey(full_name,profession,avatar_url)'
+    ).order('created_at', ascending: false).limit(100);
+    return posts.map(row).toList();
   }
-  Future<void> compose({bool story = false}) async {
-    final changed = await Navigator.push<bool>(context, MaterialPageRoute(builder: (_) => CommunityComposer(story: story)));
-    if (changed == true && mounted) setState(() => generation++);
+
+  void refresh() {
+    if (!mounted) return;
+    setState(() {
+      generation++;
+      postsFuture = load();
+    });
   }
-  @override Widget build(BuildContext context) => Column(children: [
-    Expanded(child: CommunityList(
-      key: ValueKey('reels-$generation'),
-      load: load,
-      empty: 'Henüz paylaşım yok. Ortadaki + düğmesiyle ilk paylaşımını yap!',
-      item: (post) => PostTile(
-        key: ValueKey(post['id']),
-        post: post,
-        onChange: () => setState(() => generation++),
-      ),
-    )),
-  ]);
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, bounds) => FutureBuilder<List<Map<String, dynamic>>>(
+      future: postsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: TextButton.icon(
+            onPressed: refresh, icon: const Icon(Icons.refresh),
+            label: const Text('Akış yüklenemedi · Tekrar dene'),
+          ));
+        }
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        final posts = snapshot.data!;
+        if (posts.isEmpty) {
+          return Center(child: TextButton.icon(
+            onPressed: refresh, icon: const Icon(Icons.refresh),
+            label: const Text('Henüz paylaşım yok · Yenile'),
+          ));
+        }
+        return PageView.builder(
+          key: ValueKey('video-feed-$generation'),
+          scrollDirection: Axis.vertical,
+          itemCount: posts.length,
+          itemBuilder: (context, index) {
+            final post = posts[index];
+            return SizedBox(
+              width: bounds.maxWidth, height: bounds.maxHeight,
+              child: post['video_url'] != null
+                ? PostTile(
+                    key: ValueKey(post['id']), post: post,
+                    reelsHeight: bounds.maxHeight, onChange: refresh,
+                  )
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: PostTile(
+                      key: ValueKey(post['id']), post: post, onChange: refresh,
+                    ),
+                  ),
+            );
+          },
+        );
+      },
+    ),
+  );
 }
 
 class CommunityVideo extends StatefulWidget {
   final String url;
   final double aspectRatio;
-  const CommunityVideo({super.key, required this.url, this.aspectRatio = 9 / 16});
+  final bool expandToFill;
+  const CommunityVideo({
+    super.key, required this.url, this.aspectRatio = 9 / 16,
+    this.expandToFill = false,
+  });
   @override State<CommunityVideo> createState() => _CommunityVideoState();
 }
 class _CommunityVideoState extends State<CommunityVideo> with WidgetsBindingObserver, RouteAware {
@@ -296,37 +341,38 @@ class _CommunityVideoState extends State<CommunityVideo> with WidgetsBindingObse
     controller?.dispose();
     super.dispose();
   }
-  @override Widget build(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
     final player = controller;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
-      child: AspectRatio(
-        aspectRatio: widget.aspectRatio,
-        child: ColoredBox(
-          color: const Color(0xFF122A43),
-          child: error != null
-            ? const Center(child: Text('Video önizlemesi açılamadı', style: TextStyle(color: Colors.white)))
-            : loading || player == null || !player.value.isInitialized
-              ? const Center(child: CircularProgressIndicator(color: Colors.white))
-              : InkWell(
-                onTap: toggle,
-                child: Stack(fit: StackFit.expand, children: [
-                  FittedBox(fit: BoxFit.contain, child: SizedBox(
-                    width: player.value.size.width,
-                    height: player.value.size.height,
-                    child: VideoPlayer(player),
-                  )),
-                  if (!playing)
-                    Container(color: const Color(0x44000000), alignment: Alignment.center,
-                      child: const Icon(Icons.play_circle_fill, color: Colors.white, size: 58)),
-                  if (playing)
-                    const Positioned(right: 12, bottom: 12,
-                      child: Icon(Icons.pause_circle_filled, color: Colors.white, size: 33)),
-                ]),
+    final display = ColoredBox(
+      color: Colors.black,
+      child: error != null
+        ? const Center(child: Text('Video önizlemesi açılamadı',
+            style: TextStyle(color: Colors.white)))
+        : loading || player == null || !player.value.isInitialized
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          : InkWell(
+            onTap: toggle,
+            child: Stack(fit: StackFit.expand, children: [
+              FittedBox(
+                fit: BoxFit.contain,
+                child: SizedBox(
+                  width: player.value.size.width,
+                  height: player.value.size.height,
+                  child: VideoPlayer(player),
+                ),
               ),
-        ),
-      ),
+              if (!playing)
+                Container(color: const Color(0x33000000), alignment: Alignment.center,
+                  child: const Icon(Icons.play_circle_fill, color: Colors.white, size: 58)),
+              if (playing)
+                const Positioned(top: 12, left: 12,
+                  child: Icon(Icons.pause_circle_filled, color: Colors.white, size: 30)),
+            ]),
+          ),
     );
+    if (widget.expandToFill) return SizedBox.expand(child: display);
+    return AspectRatio(aspectRatio: widget.aspectRatio, child: display);
   }
 }
 
