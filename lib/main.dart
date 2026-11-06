@@ -161,7 +161,7 @@ class _PostTileState extends State<PostTile> {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Stack(children: [
-            CommunityVideo(url: post['video_url'].toString()),
+            CommunityVideo(url: post['video_url'].toString(), aspectRatio: 4 / 5),
             Positioned.fill(child: IgnorePointer(child: DecoratedBox(
               decoration: const BoxDecoration(gradient: LinearGradient(
                 begin: Alignment.topCenter, end: Alignment.bottomCenter,
@@ -170,18 +170,23 @@ class _PostTileState extends State<PostTile> {
               )),
             ))),
             Positioned(top: 8, right: 8, child: menu(context, light: true)),
-            Positioned(left: 14, right: 70, bottom: 23, child: Column(
+            Positioned(left: 12, right: 65, bottom: 16, child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min, children: [
                 InkWell(
                   onTap: () => Navigator.push(context,
                     MaterialPageRoute(builder: (_) => ProfilePage(userId: post['author_id']))),
-                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  child: Row(mainAxisSize: MainAxisSize.max, children: [
                     ProfileAvatar(path: author['avatar_url'] as String?),
-                    const SizedBox(width: 8),
-                    Flexible(child: Text('${author['full_name'] ?? 'Kullanıcı'}',
+                    const SizedBox(width: 6),
+                    Expanded(child: Text('${author['full_name'] ?? 'Kullanıcı'}',
                       maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16))),
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14))),
+                    if (post['author_id'] != me) ...[
+                      const SizedBox(width: 5),
+                      FollowButton(key: ValueKey('follow-${post['author_id']}'),
+                        userId: post['author_id'].toString(), compact: true),
+                    ],
                   ]),
                 ),
                 if (post['body'] != null && post['body'].toString().trim().isNotEmpty) ...[
