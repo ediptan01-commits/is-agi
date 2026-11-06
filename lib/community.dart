@@ -376,16 +376,16 @@ class _FollowButtonState extends State<FollowButton> {
       return OutlinedButton(
         onPressed: busy || following == null ? null : toggle,
         style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          disabledForegroundColor: Colors.white70,
-          side: const BorderSide(color: Colors.white70),
-          backgroundColor: const Color(0x60000000),
+          foregroundColor: const Color(0xFF0875DA),
+          disabledForegroundColor: const Color(0xFF5982B0),
+          side: const BorderSide(color: Color(0xFF0875DA)),
+          backgroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
           minimumSize: const Size(0, 32),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
         ),
-        child: Text(following == null ? '...' : following! ? 'Takipte' : 'Takip et',
+        child: Text(following == null ? '...' : following! ? 'Takipte' : 'Takip Et',
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
       );
     }
