@@ -224,7 +224,8 @@ class _FeedPageState extends State<FeedPage> {
 
 class CommunityVideo extends StatefulWidget {
   final String url;
-  const CommunityVideo({super.key, required this.url});
+  final double aspectRatio;
+  const CommunityVideo({super.key, required this.url, this.aspectRatio = 9 / 16});
   @override State<CommunityVideo> createState() => _CommunityVideoState();
 }
 class _CommunityVideoState extends State<CommunityVideo> with WidgetsBindingObserver, RouteAware {
@@ -300,7 +301,7 @@ class _CommunityVideoState extends State<CommunityVideo> with WidgetsBindingObse
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: AspectRatio(
-        aspectRatio: 9 / 16,
+        aspectRatio: widget.aspectRatio,
         child: ColoredBox(
           color: const Color(0xFF122A43),
           child: error != null
@@ -331,7 +332,8 @@ class _CommunityVideoState extends State<CommunityVideo> with WidgetsBindingObse
 
 class FollowButton extends StatefulWidget {
   final String userId;
-  const FollowButton({super.key, required this.userId});
+  final bool compact;
+  const FollowButton({super.key, required this.userId, this.compact = false});
   @override State<FollowButton> createState() => _FollowButtonState();
 }
 
@@ -371,8 +373,27 @@ class _FollowButtonState extends State<FollowButton> {
     } catch (e) { if (mounted) notice(context, e); }
     finally { if (mounted) setState(() => busy = false); }
   }
-  @override Widget build(BuildContext context) => FilledButton.tonal(onPressed: busy ? null : toggle,
-    child: Text(following == null ? 'Takip durumunu yükle' : following! ? 'Takibi bırak' : 'Takip et'));
+  @override Widget build(BuildContext context) {
+    if (widget.compact) {
+      return OutlinedButton(
+        onPressed: busy || following == null ? null : toggle,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.white,
+          disabledForegroundColor: Colors.white70,
+          side: const BorderSide(color: Colors.white70),
+          backgroundColor: const Color(0x60000000),
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+          minimumSize: const Size(0, 32),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+        ),
+        child: Text(following == null ? '...' : following! ? 'Takipte' : 'Takip et',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+      );
+    }
+    return FilledButton.tonal(onPressed: busy ? null : toggle,
+      child: Text(following == null ? 'Takip durumunu yükle' : following! ? 'Takibi bırak' : 'Takip et'));
+  }
 }
 
 class InboxPage extends StatelessWidget {
