@@ -194,13 +194,6 @@ class FeedPage extends StatefulWidget {
 }
 class _FeedPageState extends State<FeedPage> {
   int generation = 0;
-  late Future<List<Map<String, dynamic>>> postsFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    postsFuture = load();
-  }
 
   Future<List<Map<String, dynamic>>> load() async {
     final posts = await db.from('posts').select(
@@ -209,56 +202,15 @@ class _FeedPageState extends State<FeedPage> {
     return posts.map(row).toList();
   }
 
-  void refresh() {
-    if (!mounted) return;
-    setState(() {
-      generation++;
-      postsFuture = load();
-    });
-  }
-
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, bounds) => FutureBuilder<List<Map<String, dynamic>>>(
-      future: postsFuture,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(child: TextButton.icon(
-            onPressed: refresh, icon: const Icon(Icons.refresh),
-            label: const Text('Akış yüklenemedi · Tekrar dene'),
-          ));
-        }
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        final posts = snapshot.data!;
-        if (posts.isEmpty) {
-          return Center(child: TextButton.icon(
-            onPressed: refresh, icon: const Icon(Icons.refresh),
-            label: const Text('Henüz paylaşım yok · Yenile'),
-          ));
-        }
-        return PageView.builder(
-          key: ValueKey('video-feed-$generation'),
-          scrollDirection: Axis.vertical,
-          itemCount: posts.length,
-          itemBuilder: (context, index) {
-            final post = posts[index];
-            return SizedBox(
-              width: bounds.maxWidth, height: bounds.maxHeight,
-              child: post['video_url'] != null
-                ? PostTile(
-                    key: ValueKey(post['id']), post: post,
-                    reelsHeight: bounds.maxHeight, onChange: refresh,
-                  )
-                : SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: PostTile(
-                      key: ValueKey(post['id']), post: post, onChange: refresh,
-                    ),
-                  ),
-            );
-          },
-        );
-      },
+  Widget build(BuildContext context) => CommunityList(
+    key: ValueKey('feed-$generation'),
+    load: load,
+    empty: 'Henüz paylaşım yok. İlk gönderiyi ortadaki + düğmesiyle paylaş!',
+    item: (post) => PostTile(
+      key: ValueKey(post['id']),
+      post: post,
+      onChange: () => setState(() => generation++),
     ),
   );
 }
