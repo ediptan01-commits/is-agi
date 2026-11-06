@@ -162,88 +162,55 @@ class _PostTileState extends State<PostTile> {
     final author = row(post['profiles'] ?? {});
     final isVideo = post['video_url'] != null;
     if (isVideo) {
-      return SizedBox(
-        height: widget.reelsHeight ?? MediaQuery.sizeOf(context).height * 0.68,
-        width: double.infinity,
-        child: Stack(fit: StackFit.expand, children: [
-          CommunityVideo(url: post['video_url'].toString(), expandToFill: true),
-          const IgnorePointer(child: DecoratedBox(
-            decoration: BoxDecoration(gradient: LinearGradient(
-              begin: Alignment.topCenter, end: Alignment.bottomCenter,
-              colors: [Color(0x44000000), Colors.transparent, Colors.transparent, Color(0xCC000000)],
-              stops: [0, 0.2, 0.62, 1],
-            )),
-          )),
-          Positioned(top: 10, right: 10, child: menu(context, light: true)),
-          Positioned(left: 12, right: 64, bottom: 22, child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(children: [
-                InkWell(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => ProfilePage(userId: post['author_id']))),
-                  child: ProfileAvatar(path: author['avatar_url'] as String?),
+      return Card(
+        margin: const EdgeInsets.only(bottom: 12),
+        clipBehavior: Clip.antiAlias,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Padding(padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
+            child: Row(children: [
+              InkWell(
+                onTap: () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => ProfilePage(userId: post['author_id']))),
+                child: ProfileAvatar(path: author['avatar_url'] as String?),
+              ),
+              const SizedBox(width: 8),
+              Expanded(child: InkWell(
+                onTap: () => Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => ProfilePage(userId: post['author_id']))),
+                child: Text('${author['full_name'] ?? 'Kullanıcı'}',
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              )),
+              if (post['author_id'] != me)
+                FollowButton(
+                  key: ValueKey('follow-${post['author_id']}'),
+                  userId: post['author_id'].toString(),
+                  compact: true,
                 ),
-                const SizedBox(width: 7),
-                Expanded(child: InkWell(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => ProfilePage(userId: post['author_id']))),
-                  child: Text('${author['full_name'] ?? 'Kullanıcı'}',
-                    maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white,
-                      fontSize: 14, fontWeight: FontWeight.w800)),
-                )),
-                const SizedBox(width: 5),
-                if (post['author_id'] != me)
-                  FollowButton(
-                    key: ValueKey('follow-${post['author_id']}'),
-                    userId: post['author_id'].toString(),
-                    compact: true,
-                  )
-                else
-                  OutlinedButton(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(
-                      builder: (_) => ProfilePage(userId: me))),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white70),
-                      backgroundColor: const Color(0x55000000),
-                      minimumSize: const Size(0, 32),
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    child: const Text('Profilim',
-                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
-                  ),
-              ]),
-              if ((post['body'] ?? '').toString().trim().isNotEmpty) ...[
-                const SizedBox(height: 9),
-                Text(post['body'].toString(), maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 14)),
-              ],
-            ],
-          )),
-          Positioned(right: 5, bottom: 18, child: Column(
-            mainAxisSize: MainAxisSize.min, children: [
-              IconButton(
-                tooltip: 'Beğen',
+              menu(context),
+            ]),
+          ),
+          CommunityVideo(url: post['video_url'].toString(), aspectRatio: 4 / 5),
+          Padding(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            child: Row(children: [
+              IconButton(tooltip: 'Beğen',
                 onPressed: post['author_id'] == me ? null : () => changeLike(context),
                 icon: Icon(liked == true ? Icons.favorite : Icons.favorite_border,
-                  color: liked == true ? Colors.redAccent : Colors.white, size: 30),
-              ),
-              Text('${count ?? 0}', style: const TextStyle(color: Colors.white, fontSize: 12)),
-              const SizedBox(height: 12),
+                  color: liked == true ? Colors.redAccent : null)),
+              Text('${count ?? 0}'),
               IconButton(tooltip: 'Yorumlar', onPressed: () => comments(context),
-                icon: const Icon(Icons.mode_comment_outlined,
-                  size: 29, color: Colors.white)),
-              const SizedBox(height: 14),
-              const Icon(Icons.share_outlined, size: 27, color: Color(0xFFC8CED6)),
-              const SizedBox(height: 20),
-              const Icon(Icons.bookmark_border, size: 27, color: Color(0xFFC8CED6)),
-            ],
-          )),
+                icon: const Icon(Icons.mode_comment_outlined)),
+              const Spacer(),
+              const Icon(Icons.share_outlined, color: Colors.grey),
+              const SizedBox(width: 15),
+              const Icon(Icons.bookmark_border, color: Colors.grey),
+              const SizedBox(width: 10),
+            ]),
+          ),
+          if ((post['body'] ?? '').toString().trim().isNotEmpty)
+            Padding(padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              child: Text(post['body'].toString(),
+                style: const TextStyle(fontSize: 14))),
         ]),
       );
     }
