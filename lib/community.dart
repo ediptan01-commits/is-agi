@@ -196,7 +196,7 @@ class _FeedPageState extends State<FeedPage> {
   bool followingOnly = false;
   int generation = 0;
   Future<List<Map<String, dynamic>>> load() async {
-    var query = db.from('posts').select('id,author_id,body,image_url,video_url,created_at,profiles!posts_author_id_fkey(full_name,profession)');
+    var query = db.from('posts').select('id,author_id,body,image_url,video_url,created_at,profiles!posts_author_id_fkey(full_name,profession,avatar_url)');
     if (followingOnly) {
       final follows = await db.from('follows').select('following_id').eq('follower_id', me);
       final ids = [me, ...follows.map((x) => x['following_id'] as String)];
@@ -341,7 +341,7 @@ class InboxPage extends StatelessWidget {
       latest.putIfAbsent(id, () => row(message));
     }
     if (latest.isEmpty) return [];
-    final people = await db.from('profiles').select('id,full_name,profession').inFilter('id', latest.keys.toList());
+    final people = await db.from('profiles').select('id,full_name,profession,avatar_url').inFilter('id', latest.keys.toList());
     final byId = {for (final person in people) person['id']: row(person)};
     return latest.entries.where((entry) => byId.containsKey(entry.key)).map((entry) => {
       ...byId[entry.key]!, 'last_body': entry.value['body'], 'last_at': entry.value['created_at'],
@@ -349,7 +349,7 @@ class InboxPage extends StatelessWidget {
   }
   @override Widget build(BuildContext context) => CommunityList(load: load, interval: const Duration(seconds: 8),
     empty: 'Henüz sohbet yok. Keşfet bölümünden birine mesaj gönder.',
-    item: (person) => panel(ListTile(leading: const CircleAvatar(child: Icon(Icons.chat_bubble_outline)),
+    item: (person) => panel(ListTile(leading: ProfileAvatar(path: person['avatar_url'] as String?),
       title: Text('${person['full_name']}'), subtitle: Text('${person['last_body']}', maxLines: 1, overflow: TextOverflow.ellipsis),
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ChatPage(otherId: person['id'], name: '${person['full_name']}'))))));
 }

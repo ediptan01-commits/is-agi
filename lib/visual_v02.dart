@@ -18,16 +18,12 @@ Widget profileCover(Map<String,dynamic> p) => Card(
     Transform.translate(offset:const Offset(0,-24),child:Row(children:[
      Container(padding:const EdgeInsets.all(4),decoration:const BoxDecoration(
       color:Colors.white,shape:BoxShape.circle),
-      child:CircleAvatar(radius:37,backgroundColor:const Color(0xFFDCEBFC),
-       backgroundImage:p['avatar_url']!=null&&p['avatar_url'].toString().isNotEmpty
-        ? NetworkImage(p['avatar_url'].toString()):null,
-       child:p['avatar_url']==null||p['avatar_url'].toString().isEmpty
-        ? const Icon(Icons.person,size:40,color:iaNavy):null)),
+      child:ProfileAvatar(path:p['avatar_url'] as String?,radius:37)),
      const Spacer(),
      if(p['available']==true)const Chip(label:Text('İşe müsait'),
       avatar:Icon(Icons.circle,color:iaGreen,size:13)),
     ])),
-    Text(p['full_name']?.toString()??'Kullanıcı',style:const TextStyle(
+    Text((p['full_name']?.toString().trim().isNotEmpty??false)?p['full_name'].toString():'Kullanıcı',style:const TextStyle(
      fontWeight:FontWeight.w900,fontSize:27,color:iaNavy)),
     const SizedBox(height:4),
     Text('${p['profession']??''} · ${p['city']??''}',style:const TextStyle(fontSize:15,
