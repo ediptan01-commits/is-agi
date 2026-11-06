@@ -29,7 +29,7 @@ void main(){
     await tester.enterText(find.byType(TextField).at(0),'');
     await tester.enterText(find.byType(TextField).at(2),'Elektrik, Elektrik, Bakım');
     await tester.enterText(find.byType(TextField).at(3),'');
-    await tester.ensureVisible(find.text('Profili kaydet'));await tester.tap(find.text('Profili kaydet'));await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Profili kaydet'),250,scrollable:find.byType(Scrollable).last);await tester.tap(find.text('Profili kaydet'));await tester.pumpAndSettle();
     expect(saved?['full_name'],'');expect(saved?['bio'],'');expect(saved?['skills'],['Elektrik','Bakım']);expect(saved?.containsKey('avatar_url'),false);
   });
   testWidgets('Silme onayı iptal edilince işlem yapılmaz',(tester)async{

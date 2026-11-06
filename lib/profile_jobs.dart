@@ -201,7 +201,7 @@ class _ProfilePageState extends State<ProfilePage>{
     if(value=='report'){await editText(context,title:'Kullanıcıyı şikâyet et',save:(reason)async{await db.from('reports').insert({'reporter_id':me,'target_user_id':widget.userId,'reason':reason});});}
     else{await runSafe(context,()async{final existing=await db.from('blocks').select('blocked_id').eq('blocker_id',me).eq('blocked_id',widget.userId);if(existing.isEmpty){await db.from('blocks').insert({'blocker_id':me,'blocked_id':widget.userId});}else{await db.from('blocks').delete().eq('blocker_id',me).eq('blocked_id',widget.userId);}if(mounted)Navigator.pop(context);});}
   }
-  @override Widget build(BuildContext context)=>FutureBuilder<Map<String,dynamic>>(future:data,builder:(context,snapshot){
+  @override Widget build(BuildContext context)=>Scaffold(appBar:Navigator.canPop(context)?AppBar(title:const Text('Profil')):null,body:FutureBuilder<Map<String,dynamic>>(future:data,builder:(context,snapshot){
     if(snapshot.hasError)return Center(child:TextButton(onPressed:refresh,child:const Text('Profil yüklenemedi. Tekrar dene.')));
     if(!snapshot.hasData)return const Center(child:CircularProgressIndicator());
     final p=snapshot.data!;
@@ -229,5 +229,5 @@ class _ProfilePageState extends State<ProfilePage>{
         return Column(children:snapshot.data!.map((post)=>PostTile(key:ValueKey(post['id']),post:{...row(post),'profiles':p},onChange:refresh)).toList());
       }),
     ]));
-  });
+  }));
 }
