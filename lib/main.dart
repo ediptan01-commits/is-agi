@@ -76,7 +76,7 @@ class _ShellState extends State<Shell> {
    body:pages[selected],
    bottomNavigationBar:SafeArea(top:false,child:SizedBox(height:76,child:Container(padding:const EdgeInsets.symmetric(vertical:4,horizontal:3),decoration:const BoxDecoration(color:Colors.white,boxShadow:[BoxShadow(color:Color(0x16073565),blurRadius:13,offset:Offset(0,-3))]),child:Row(mainAxisSize:MainAxisSize.max,children:[
     _nav(0,Icons.home_outlined,Icons.home,'Akış'),
-    _nav(1,Icons.work_outline,Icons.work,'İşler'),
+    _nav(1,Icons.work_outline,Icons.work,'İş Pazarı'),
     Expanded(child:SizedBox(height:64,child:Center(child:FloatingActionButton.small(heroTag:'main-share',onPressed:createPost,tooltip:'Paylaş',shape:const CircleBorder(),backgroundColor:iaBlue,foregroundColor:Colors.white,child:const Icon(Icons.add,size:30))))),
     _nav(2,Icons.explore_outlined,Icons.explore,'Keşfet'),
     _nav(3,Icons.chat_bubble_outline,Icons.chat_bubble,'Mesajlar'),
