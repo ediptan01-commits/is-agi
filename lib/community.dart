@@ -209,17 +209,16 @@ class _FeedPageState extends State<FeedPage> {
     if (changed == true && mounted) setState(() => generation++);
   }
   @override Widget build(BuildContext context) => Column(children: [
-    const Padding(padding: EdgeInsets.fromLTRB(16, 12, 16, 3), child: Align(alignment: Alignment.centerLeft, child: Text('Sosyal Akış', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: iaNavy)))),
-    StoryStrip(key: ValueKey('stories-$generation'), onAdd: () => compose(story: true)),
-    Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: Row(children: [
-      ChoiceChip(label: const Text('Herkes'), selected: !followingOnly, onSelected: (_) => setState(() => followingOnly = false)),
-      const SizedBox(width: 8),
-      ChoiceChip(label: const Text('Takip ettiklerim'), selected: followingOnly, onSelected: (_) => setState(() => followingOnly = true)),
-      const Spacer(), IconButton(tooltip: 'Akışı yenile', onPressed: () => setState(() => generation++), icon: const Icon(Icons.refresh)),
-    ])),
-    Expanded(child: CommunityList(key: ValueKey('$followingOnly-$generation'), load: load,
-      empty: followingOnly ? 'Takip ettiğin kişilerin paylaşımları burada. Keşfet bölümünden yeni kişiler bulabilirsin.' : 'Henüz paylaşım yok. İlk paylaşımı sen yap!',
-      item: (post) => PostTile(key: ValueKey(post['id']), post: post, onChange: () => setState(() => generation++)))),
+    Expanded(child: CommunityList(
+      key: ValueKey('reels-$generation'),
+      load: load,
+      empty: 'Henüz paylaşım yok. Ortadaki + düğmesiyle ilk paylaşımını yap!',
+      item: (post) => PostTile(
+        key: ValueKey(post['id']),
+        post: post,
+        onChange: () => setState(() => generation++),
+      ),
+    )),
   ]);
 }
 
@@ -301,7 +300,7 @@ class _CommunityVideoState extends State<CommunityVideo> with WidgetsBindingObse
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: AspectRatio(
-        aspectRatio: 16 / 9,
+        aspectRatio: 9 / 16,
         child: ColoredBox(
           color: const Color(0xFF122A43),
           child: error != null
@@ -311,7 +310,7 @@ class _CommunityVideoState extends State<CommunityVideo> with WidgetsBindingObse
               : InkWell(
                 onTap: toggle,
                 child: Stack(fit: StackFit.expand, children: [
-                  FittedBox(fit: BoxFit.cover, child: SizedBox(
+                  FittedBox(fit: BoxFit.contain, child: SizedBox(
                     width: player.value.size.width,
                     height: player.value.size.height,
                     child: VideoPlayer(player),
