@@ -74,14 +74,14 @@ class _ShellState extends State<Shell> {
     title:const Row(mainAxisSize:MainAxisSize.min,children:[Icon(Icons.hub_rounded),SizedBox(width:9),Text('İş Ağı',style:TextStyle(fontWeight:FontWeight.w800,fontSize:24))]),
     actions:[const NotificationBell(),IconButton(tooltip:'Ara',onPressed:()=>setState(()=>selected=2),icon:const Icon(Icons.search)),IconButton(tooltip:'Çıkış',onPressed:()=>db.auth.signOut(),icon:const Icon(Icons.logout))]),
    body:pages[selected],
-   bottomNavigationBar:SafeArea(top:false,child:Container(padding:const EdgeInsets.symmetric(vertical:7,horizontal:3),decoration:const BoxDecoration(color:Colors.white,boxShadow:[BoxShadow(color:Color(0x16073565),blurRadius:13,offset:Offset(0,-3))]),child:Row(children:[
+   bottomNavigationBar:SafeArea(top:false,child:SizedBox(height:76,child:Container(padding:const EdgeInsets.symmetric(vertical:4,horizontal:3),decoration:const BoxDecoration(color:Colors.white,boxShadow:[BoxShadow(color:Color(0x16073565),blurRadius:13,offset:Offset(0,-3))]),child:Row(mainAxisSize:MainAxisSize.max,children:[
     _nav(0,Icons.home_outlined,Icons.home,'Akış'),
     _nav(1,Icons.work_outline,Icons.work,'İşler'),
-    Expanded(child:Center(child:FloatingActionButton.small(heroTag:'main-share',onPressed:createPost,tooltip:'Paylaş',shape:const CircleBorder(),backgroundColor:iaBlue,foregroundColor:Colors.white,child:const Icon(Icons.add,size:30)))),
+    Expanded(child:SizedBox(height:64,child:Center(child:FloatingActionButton.small(heroTag:'main-share',onPressed:createPost,tooltip:'Paylaş',shape:const CircleBorder(),backgroundColor:iaBlue,foregroundColor:Colors.white,child:const Icon(Icons.add,size:30))))),
     _nav(2,Icons.explore_outlined,Icons.explore,'Keşfet'),
     _nav(3,Icons.chat_bubble_outline,Icons.chat_bubble,'Mesajlar'),
     _nav(4,Icons.person_outline,Icons.person,'Profil'),
-   ]))),
+   ])))),
   );
  }
  Widget _nav(int i,IconData regular,IconData active,String label)=>Expanded(child:InkWell(onTap:()=>setState(()=>selected=i),child:Padding(padding:const EdgeInsets.symmetric(vertical:6),child:Column(mainAxisSize:MainAxisSize.min,children:[Icon(selected==i?active:regular,size:22,color:selected==i?iaBlue:const Color(0xff5c6877)),const SizedBox(height:4),Text(label,style:TextStyle(fontSize:10,fontWeight:selected==i?FontWeight.bold:FontWeight.w500,color:selected==i?iaBlue:const Color(0xff5c6877)))]))));
