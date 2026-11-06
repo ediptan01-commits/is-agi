@@ -107,82 +107,144 @@ class _PostTileState extends State<PostTile> {
   }
   @override void initState() { super.initState(); runSafe(context, refresh); }
 
-  @override Widget build(BuildContext c) {
-    final p = widget.post;
-    final author = row(p['profiles'] ?? {});
+  Future<void> changeLike(BuildContext context) async {
+    if (widget.post['author_id'] == me) return;
+    await runSafe(context, () async {
+      if (liked == true) {
+        await db.from('likes').delete()
+            .eq('post_id', widget.post['id']).eq('user_id', me);
+      } else {
+        await db.from('likes').insert({'post_id': widget.post['id'], 'user_id': me});
+      }
+      await refresh();
+    });
+  }
+
+  void comments(BuildContext context) => Navigator.push(context,
+    MaterialPageRoute(builder: (_) => CommentsPage(postId: widget.post['id'])));
+
+  Future<void> more(String action, BuildContext context) async {
+    if (action == 'report') {
+      await editText(context, title: 'Gönderiyi şikâyet et', save: (reason) async {
+        await db.from('reports').insert({
+          'reporter_id': me,
+          'target_post_id': widget.post['id'],
+          'reason': reason,
+        });
+      });
+    } else if (action == 'delete') {
+      await runSafe(context, () async {
+        await db.from('posts').delete().eq('id', widget.post['id']);
+        widget.onChange();
+      });
+    }
+  }
+
+  Widget menu(BuildContext context, {bool light = false}) => PopupMenuButton<String>(
+    tooltip: 'Gönderi işlemleri',
+    icon: Icon(Icons.more_vert, color: light ? Colors.white : null),
+    onSelected: (value) => more(value, context),
+    itemBuilder: (_) => [
+      if (widget.post['author_id'] == me)
+        const PopupMenuItem(value: 'delete', child: Text('Sil')),
+      const PopupMenuItem(value: 'report', child: Text('Şikâyet et')),
+    ],
+  );
+
+  @override Widget build(BuildContext context) {
+    final post = widget.post;
+    final author = row(post['profiles'] ?? {});
+    final isVideo = post['video_url'] != null;
+    if (isVideo) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(children: [
+            CommunityVideo(url: post['video_url'].toString()),
+            Positioned.fill(child: IgnorePointer(child: DecoratedBox(
+              decoration: const BoxDecoration(gradient: LinearGradient(
+                begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                colors: [Color(0x66000000), Colors.transparent, Colors.transparent, Color(0xD9000000)],
+                stops: [0, 0.2, 0.57, 1],
+              )),
+            ))),
+            Positioned(top: 8, right: 8, child: menu(context, light: true)),
+            Positioned(left: 14, right: 70, bottom: 23, child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, children: [
+                InkWell(
+                  onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => ProfilePage(userId: post['author_id']))),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    ProfileAvatar(path: author['avatar_url'] as String?),
+                    const SizedBox(width: 8),
+                    Flexible(child: Text('${author['full_name'] ?? 'Kullanıcı'}',
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16))),
+                  ]),
+                ),
+                if (post['body'] != null && post['body'].toString().trim().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(post['body'].toString(), maxLines: 3, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 14)),
+                ],
+              ],
+            )),
+            Positioned(right: 4, bottom: 16, child: Column(
+              mainAxisSize: MainAxisSize.min, children: [
+                IconButton(
+                  tooltip: 'Beğen', onPressed: post['author_id'] == me ? null : () => changeLike(context),
+                  icon: Icon(liked == true ? Icons.favorite : Icons.favorite_border,
+                    color: liked == true ? Colors.redAccent : Colors.white, size: 31),
+                ),
+                Text('${count ?? 0}', style: const TextStyle(color: Colors.white, fontSize: 12)),
+                const SizedBox(height: 9),
+                IconButton(tooltip: 'Yorumlar', onPressed: () => comments(context),
+                  icon: const Icon(Icons.mode_comment_outlined, size: 30, color: Colors.white)),
+                const SizedBox(height: 10),
+                const Icon(Icons.share_outlined, size: 28, color: Color(0xFFB9C0CC)),
+                const SizedBox(height: 19),
+                const Icon(Icons.bookmark_border, size: 28, color: Color(0xFFB9C0CC)),
+              ],
+            )),
+          ]),
+        ),
+      );
+    }
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
       clipBehavior: Clip.antiAlias,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Padding(padding: const EdgeInsets.fromLTRB(12, 8, 8, 4), child: Row(children: [
-          GestureDetector(
-            onTap: () => Navigator.push(c, MaterialPageRoute(builder: (_) => ProfilePage(userId:p['author_id']))),
-            child: ProfileAvatar(path:author['avatar_url'] as String?)),
-          const SizedBox(width: 10),
-          Expanded(child: InkWell(
-            onTap: () => Navigator.push(c, MaterialPageRoute(builder: (_) => ProfilePage(userId:p['author_id']))),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('${author['full_name']??'Kullanıcı'}',style:const TextStyle(fontSize:15,fontWeight:FontWeight.w700)),
-              Text('${author['profession']??''}',style:const TextStyle(color:Colors.black54,fontSize:12)),
-            ]),
-          )),
-          PopupMenuButton<String>(
-            tooltip:'İşlemler',
-            onSelected:(v) async {
-              if(v=='report') {
-                await editText(c,title:'Gönderiyi şikâyet et',save:(reason)async {
-                  await db.from('reports').insert({'reporter_id':me,'target_post_id':p['id'],'reason':reason});
-                });
-              } else if(v=='delete') {
-                await runSafe(c,()async {
-                  await db.from('posts').delete().eq('id',p['id']);
-                  widget.onChange();
-                });
-              }
-            },
-            itemBuilder:(_) => [
-              if(p['author_id']==me) const PopupMenuItem(value:'delete',child:Text('Sil')),
-              const PopupMenuItem(value:'report',child:Text('Şikâyet et')),
-            ],
-          ),
-        ])),
-        Padding(padding:const EdgeInsets.fromLTRB(14,3,14,10),
-          child:Text('${p['body']}',style:const TextStyle(fontSize:15))),
-        if(p['image_url']!=null)
-          Image.network(p['image_url'],height:240,width:double.infinity,fit:BoxFit.cover,
-            errorBuilder:(_,__,___)=>const Padding(
-              padding:EdgeInsets.all(12),child:Text('Fotoğraf yüklenemedi.'))),
-        if(p['video_url']!=null)
-          Padding(padding:const EdgeInsets.symmetric(horizontal:10),
-            child:CommunityVideo(url:p['video_url'])),
-        Padding(padding:const EdgeInsets.fromLTRB(8,4,8,5),child:Row(children:[
-          IconButton(
-            tooltip:'Beğen',
-            onPressed:p['author_id']==me?null:()async {
-              await runSafe(c,()async {
-                if(liked==true) {
-                  await db.from('likes').delete().eq('post_id',p['id']).eq('user_id',me);
-                } else {
-                  await db.from('likes').insert({'post_id':p['id'],'user_id':me});
-                }
-                await refresh();
-              });
-            },
-            icon:Icon(liked==true?Icons.favorite:Icons.favorite_border,
-              color:liked==true?Colors.redAccent:null),
-          ),
-          Text('${count??0}',style:const TextStyle(fontSize:13)),
-          const SizedBox(width:5),
-          IconButton(
-            tooltip:'Yorum yap',
-            onPressed:()=>Navigator.push(c,MaterialPageRoute(
-              builder:(_)=>CommentsPage(postId:p['id']))),
-            icon:const Icon(Icons.mode_comment_outlined)),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+          leading: ProfileAvatar(path: author['avatar_url'] as String?),
+          title: Text('${author['full_name'] ?? 'Kullanıcı'}',
+            style: const TextStyle(fontWeight: FontWeight.w700)),
+          subtitle: Text('${author['profession'] ?? ''}'),
+          onTap: () => Navigator.push(context,
+            MaterialPageRoute(builder: (_) => ProfilePage(userId: post['author_id']))),
+          trailing: menu(context),
+        ),
+        if (post['body'] != null && post['body'].toString().trim().isNotEmpty)
+          Padding(padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+            child: Text(post['body'].toString(), style: const TextStyle(fontSize: 15))),
+        if (post['image_url'] != null)
+          Image.network(post['image_url'].toString(), width: double.infinity, height: 270,
+            fit: BoxFit.contain, errorBuilder: (_, __, ___) =>
+              const Padding(padding: EdgeInsets.all(12), child: Text('Fotoğraf yüklenemedi.'))),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 6), child: Row(children: [
+          IconButton(tooltip: 'Beğen', onPressed: post['author_id'] == me ? null : () => changeLike(context),
+            icon: Icon(liked == true ? Icons.favorite : Icons.favorite_border,
+              color: liked == true ? Colors.redAccent : null)),
+          Text('${count ?? 0}'),
+          IconButton(tooltip: 'Yorumlar', onPressed: () => comments(context),
+            icon: const Icon(Icons.mode_comment_outlined)),
           const Spacer(),
-          const IconButton(tooltip:'Paylaşım bağlantısı yakında',onPressed:null,
-            icon:Icon(Icons.share_outlined)),
-          const IconButton(tooltip:'Kaydetme özelliği yakında',onPressed:null,
-            icon:Icon(Icons.bookmark_border)),
+          const Icon(Icons.share_outlined, color: Colors.grey),
+          const SizedBox(width: 18),
+          const Icon(Icons.bookmark_border, color: Colors.grey),
+          const SizedBox(width: 12),
         ])),
       ]),
     );
