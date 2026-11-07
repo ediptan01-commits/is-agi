@@ -195,7 +195,6 @@ class FeedPage extends StatefulWidget {
 class _FeedPageState extends State<FeedPage> {
   int generation = 0;
   bool showReels = false;
-  final feedKey = GlobalKey<CommunityListState>();
 
   Future<List<Map<String, dynamic>>> load() async {
     final posts = await db.from('posts').select(
