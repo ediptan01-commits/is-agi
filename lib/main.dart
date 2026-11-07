@@ -62,12 +62,11 @@ class _ShellState extends State<Shell> {
    const ListTile(title:Text('Paylaşım oluştur',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold))),
    ListTile(leading:const Icon(Icons.add_photo_alternate_outlined),title:const Text('Sosyal gönderi'),onTap:()=>Navigator.pop(c,'post')),
    ListTile(leading:const Icon(Icons.auto_stories_outlined),title:const Text('Hikâye'),onTap:()=>Navigator.pop(c,'story')),
-   ListTile(leading:const Icon(Icons.smart_display_outlined),title:const Text('Reels videosu'),onTap:()=>Navigator.pop(c,'reel')),
    ListTile(leading:const Icon(Icons.work_outline),title:const Text('İş ilanı'),onTap:()=>Navigator.pop(c,'job')),
   ])));
   if(!mounted||action==null)return;
   if(action=='job'){setState(()=>selected=1);return;}
-  final ok=await Navigator.push<bool>(context,MaterialPageRoute(builder:(_)=>CommunityComposer(story:action=='story',reel:action=='reel')));
+  final ok=await Navigator.push<bool>(context,MaterialPageRoute(builder:(_)=>CommunityComposer(story:action=='story')));
   if(ok==true&&mounted)setState(()=>revision++);
  }
  @override Widget build(BuildContext c){
