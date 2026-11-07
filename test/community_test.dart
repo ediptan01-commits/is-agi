@@ -18,7 +18,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Paylaş'));
     await tester.pump();
     expect(published, false);
-    expect(find.text('Paylaşımına kısa bir not ekle.'), findsOneWidget);
+    expect(find.text('Bir açıklama veya fotoğraf/video ekle.'), findsOneWidget);
   });
 
   testWidgets('Yayınlama sırasında tekrar gönderim engellenir ve hata taslağı korur', (tester) async {
