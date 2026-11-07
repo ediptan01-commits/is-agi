@@ -120,8 +120,9 @@ Future<void> publishCommunityPost(String text, PickedMedia? media, bool story) a
 
 class CommunityComposer extends StatefulWidget {
   final bool story;
+  final bool reel;
   final Future<void> Function(String, PickedMedia?, bool)? onPublish;
-  const CommunityComposer({super.key, this.story = false, this.onPublish});
+  const CommunityComposer({super.key, this.story = false, this.reel = false, this.onPublish});
   @override State<CommunityComposer> createState() => _CommunityComposerState();
 }
 class _CommunityComposerState extends State<CommunityComposer> {
@@ -157,6 +158,7 @@ class _CommunityComposerState extends State<CommunityComposer> {
     final body = text.text.trim();
     if (body.isEmpty && media == null && !widget.story) { notice(context, 'Bir açıklama veya fotoğraf/video ekle.'); return; }
     if (widget.story && media == null) { notice(context, 'Hikâyene fotoğraf veya video ekle.'); return; }
+    if (widget.reel && media?.video != true) { notice(context, 'Reels için bir video seçmelisin.'); return; }
     setState(() => busy = true);
     try {
       await (widget.onPublish ?? publishCommunityPost)(body, media, widget.story);
@@ -166,7 +168,7 @@ class _CommunityComposerState extends State<CommunityComposer> {
   }
   @override void dispose() { text.dispose(); super.dispose(); }
   @override Widget build(BuildContext context) => PopScope(canPop: !busy, child: Scaffold(
-    appBar: AppBar(title: Text(widget.story ? 'Hikâye paylaş' : 'Yeni paylaşım')),
+    appBar: AppBar(title: Text(widget.story ? 'Hikâye paylaş' : widget.reel ? 'Reels videosu paylaş' : 'Yeni paylaşım')), 
     body: ListView(padding: const EdgeInsets.all(16), children: [
       Text(widget.story ? 'Hikâyen 24 saat boyunca görünür.' : 'Gününden bir an, bir fikir veya yaptığın bir işi paylaş.', style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 16),
@@ -178,7 +180,7 @@ class _CommunityComposerState extends State<CommunityComposer> {
         TextButton.icon(onPressed: busy ? null : () => setState(() => media = null), icon: const Icon(Icons.close), label: const Text('Eki kaldır')),
       ],
       Wrap(spacing: 12, children: [
-        OutlinedButton.icon(onPressed: busy || picking ? null : () => pick(false), icon: const Icon(Icons.photo_outlined), label: const Text('Fotoğraf')),
+        if (!widget.reel) OutlinedButton.icon(onPressed: busy || picking ? null : () => pick(false), icon: const Icon(Icons.photo_outlined), label: const Text('Fotoğraf')), 
         OutlinedButton.icon(onPressed: busy || picking ? null : () => pick(true), icon: const Icon(Icons.videocam_outlined), label: const Text('Video')),
       ]),
       const Text('Fotoğraf: 5 MB · Video: 60 saniye / 25 MB'),
