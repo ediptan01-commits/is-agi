@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'community.dart';
+part 'reels.dart';
 part 'visual_v02.dart';
 part 'profile_jobs.dart';
 
