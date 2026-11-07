@@ -129,6 +129,6 @@ class _ReelsTileState extends State<ReelsTile> {
               const SizedBox(height:18),
               const Icon(Icons.bookmark_border,color:Color(0xFFCBD1DD),size:27),
             ])),
-        ]))));
+        ])));
   }
 }
