@@ -576,7 +576,8 @@ class _StoryStripState extends State<StoryStrip> {
     } catch (_) { if (mounted) setState(() => failed = true); }
     finally { fetching = false; }
   }
-  @override void dispose() { timer?.cancel(); super.di  @override
+  @override void dispose() { timer?.cancel(); super.dispose(); }
+  @override
   Widget build(BuildContext context) {
     final seen = <String>{};
     final people = stories.where((story) => seen.add(story['author_id'].toString())).toList();
