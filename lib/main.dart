@@ -45,7 +45,7 @@ class _AuthPageState extends State<AuthPage> {
   final email=TextEditingController(),password=TextEditingController(),name=TextEditingController(); bool signUp=false, busy=false;
   @override void dispose(){email.dispose();password.dispose();name.dispose();super.dispose();}
   @override Widget build(BuildContext context)=> Scaffold(body:SafeArea(child:Center(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:420),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
-    const Icon(Icons.hub_rounded,size:72,color:Color(0xff1858a7)),const SizedBox(height:16),const Text('İş Ağı',textAlign:TextAlign.center,style:TextStyle(fontSize:34,fontWeight:FontWeight.w800)),const Text('Mesleğini göster, çevreni büyüt, iş bul.',textAlign:TextAlign.center),const SizedBox(height:28),
+    const Icon(Icons.hub_rounded,size:72,color:Color(0xff1858a7)),const SizedBox(height:16),const Text('İş Ağı',textAlign:TextAlign.center,style:TextStyle(fontSize:34,fontWeight:FontWeight.w800)),const Text('Paylaş, keşfet, bağlantı kur. İstersen iş de bul.',textAlign:TextAlign.center),const SizedBox(height:28),
     if(signUp)...[TextField(controller:name,decoration:const InputDecoration(labelText:'Ad soyad')),const SizedBox(height:12)],
     TextField(controller:email,keyboardType:TextInputType.emailAddress,decoration:const InputDecoration(labelText:'E-posta')),const SizedBox(height:12),TextField(controller:password,obscureText:true,decoration:const InputDecoration(labelText:'Şifre (en az 6 karakter)')),const SizedBox(height:16),
     FilledButton(onPressed:busy?null:() async {setState(()=>busy=true);await runSafe(context,() async { if(signUp){await db.auth.signUp(email:email.text.trim(),password:password.text,data:{'full_name':name.text.trim()});if(context.mounted)notice(context,'Kayıt oluşturuldu. E-posta onayı açıksa gelen kutunuzu kontrol edin.');}else{await db.auth.signInWithPassword(email:email.text.trim(),password:password.text);} });if(mounted)setState(()=>busy=false);},child:Padding(padding:const EdgeInsets.all(12),child:Text(signUp?'Hesap oluştur':'Giriş yap'))),
@@ -62,11 +62,12 @@ class _ShellState extends State<Shell> {
    const ListTile(title:Text('Paylaşım oluştur',style:TextStyle(fontSize:20,fontWeight:FontWeight.bold))),
    ListTile(leading:const Icon(Icons.add_photo_alternate_outlined),title:const Text('Sosyal gönderi'),onTap:()=>Navigator.pop(c,'post')),
    ListTile(leading:const Icon(Icons.auto_stories_outlined),title:const Text('Hikâye'),onTap:()=>Navigator.pop(c,'story')),
+   ListTile(leading:const Icon(Icons.smart_display_outlined),title:const Text('Reels videosu'),onTap:()=>Navigator.pop(c,'reel')),
    ListTile(leading:const Icon(Icons.work_outline),title:const Text('İş ilanı'),onTap:()=>Navigator.pop(c,'job')),
   ])));
   if(!mounted||action==null)return;
   if(action=='job'){setState(()=>selected=1);return;}
-  final ok=await Navigator.push<bool>(context,MaterialPageRoute(builder:(_)=>CommunityComposer(story:action=='story')));
+  final ok=await Navigator.push<bool>(context,MaterialPageRoute(builder:(_)=>CommunityComposer(story:action=='story',reel:action=='reel')));
   if(ok==true&&mounted)setState(()=>revision++);
  }
  @override Widget build(BuildContext c){
