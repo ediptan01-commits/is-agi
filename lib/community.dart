@@ -570,27 +570,92 @@ class _StoryStripState extends State<StoryStrip> {
     if (fetching) return;
     fetching = true;
     try {
-      final result = await db.from('stories').select('id,author_id,caption,kind,media_path,expires_at,profiles!stories_author_id_fkey(full_name)')
+      final result = await db.from('stories').select('id,author_id,caption,kind,media_path,expires_at,profiles!stories_author_id_fkey(full_name,avatar_url)')
         .gt('expires_at', DateTime.now().toUtc().toIso8601String()).order('created_at', ascending: false).limit(50);
       if (mounted) setState(() { stories = result.map(row).toList(); failed = false; });
     } catch (_) { if (mounted) setState(() => failed = true); }
     finally { fetching = false; }
   }
-  @override void dispose() { timer?.cancel(); super.dispose(); }
-  @override Widget build(BuildContext context) => SizedBox(height: 88, child: ListView(scrollDirection: Axis.horizontal,
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), children: [
-      SizedBox(width: 72, child: InkWell(onTap: widget.onAdd, child: const Column(children: [
-        CircleAvatar(radius: 23, child: Icon(Icons.add)), SizedBox(height: 4), Text('Hikâyen', maxLines: 1),
-      ]))),
-      if (failed) TextButton(onPressed: load, child: const Text('Hikâyeleri yenile')),
-      ...stories.map((story) => SizedBox(width: 74, child: InkWell(onTap: () async {
-        await Navigator.push(context, MaterialPageRoute(builder: (_) => StoryPage(story: story)));
-        if (mounted) load();
-      }, child: Column(children: [
-        CircleAvatar(radius: 24, backgroundColor: Theme.of(context).colorScheme.primary, child:
-          Icon(story['kind'] == 'video' ? Icons.videocam_outlined : Icons.photo_outlined, color: Colors.white)),
-        const SizedBox(height: 6), Text('${row(story['profiles'] ?? {})['full_name'] ?? 'Kullanıcı'}', maxLines: 1, overflow: TextOverflow.ellipsis),
-      ])))),
+  @override void dispose() { timer?.cancel(); super.di  @override
+  Widget build(BuildContext context) {
+    final seen = <String>{};
+    final people = stories.where((story) => seen.add(story['author_id'].toString())).toList();
+    return Container(
+      height: 104,
+      color: Colors.white,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+        children: [
+          SizedBox(width: 78, child: InkWell(
+            onTap: widget.onAdd,
+            child: Column(children: [
+              Stack(clipBehavior: Clip.none, children: [
+                const ProfileAvatar(radius: 27),
+                Positioned(right: -3, bottom: -2,
+                  child: Container(
+                    width: 23, height: 23,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1677D3),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                    ),
+                    child: const Icon(Icons.add, color: Colors.white, size: 17),
+                  )),
+              ]),
+              const SizedBox(height: 5),
+              const Text('Hikâye ekle', maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 11)),
+            ]),
+          )),
+          if (failed) SizedBox(width: 125, child: TextButton(
+            onPressed: load,
+            child: const Text('Hikâyeleri yenile'),
+          )),
+          ...people.map((story) {
+            final author = row(story['profiles'] ?? {});
+            return SizedBox(width: 78, child: InkWell(
+              onTap: () async {
+                await Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => StoryPage(story: story),
+                ));
+                if (mounted) load();
+              },
+              child: Column(children: [
+                Container(
+                  padding: const EdgeInsets.all(3),
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFFA9B31), Color(0xFFDA337D), Color(0xFF7249CA)],
+                      begin: Alignment.bottomLeft,
+                      end: Alignment.topRight,
+                    ),
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle, color: Colors.white,
+                    ),
+                    child: ProfileAvatar(
+                      radius: 24,
+                      path: author['avatar_url'] as String?,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text('${author['full_name'] ?? 'Kullanıcı'}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11)),
+              ]),
+            ));
+          }),
+        ],
+      ),
+    );
+  }),
     ]));
 }
 
