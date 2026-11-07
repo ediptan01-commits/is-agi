@@ -196,7 +196,6 @@ class FeedPage extends StatefulWidget {
 }
 class _FeedPageState extends State<FeedPage> {
   int generation = 0;
-  bool showReels = false;
 
   Future<List<Map<String, dynamic>>> load() async {
     final posts = await db.from('posts').select(
@@ -205,44 +204,32 @@ class _FeedPageState extends State<FeedPage> {
     return posts.map(row).toList();
   }
 
+  Future<void> addStory() async {
+    final shared = await Navigator.push<bool>(context,
+      MaterialPageRoute(builder: (_) => const CommunityComposer(story: true)));
+    if (shared == true && mounted) setState(() => generation++);
+  }
+
   void refresh() {
-    if (!mounted) return;
-    setState(() => generation++);
+    if (mounted) setState(() => generation++);
   }
 
   @override
   Widget build(BuildContext context) => Column(children: [
-    Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-      child: Row(children: [
-        Expanded(child: SegmentedButton<bool>(
-          showSelectedIcon: false,
-          segments: const [
-            ButtonSegment(value: false, icon: Icon(Icons.grid_view_rounded), label: Text('Akış')),
-            ButtonSegment(value: true, icon: Icon(Icons.smart_display_outlined), label: Text('Reels')),
-          ],
-          selected: {showReels},
-          onSelectionChanged: (values) => setState(() => showReels = values.first),
-        )),
-        IconButton(
-          tooltip: 'Yenile', icon: const Icon(Icons.refresh),
-          onPressed: refresh,
-        ),
-      ]),
+    StoryStrip(
+      key: ValueKey('stories-$generation'),
+      onAdd: addStory,
     ),
-    Expanded(child: showReels
-      ? ReelsPage(key: ValueKey('reels-$generation'))
-      : CommunityList(
-          key: ValueKey('feed-$generation'),
-          load: load,
-          empty: 'Henüz paylaşım yok. İlk gönderiyi ortadaki + düğmesiyle paylaş!',
-          item: (post) => PostTile(
-            key: ValueKey(post['id']),
-            post: post,
-            onChange: refresh,
-          ),
-        ),
-    ),
+    Expanded(child: CommunityList(
+      key: ValueKey('feed-$generation'),
+      load: load,
+      empty: 'Henüz paylaşım yok. İlk gönderiyi ortadaki + düğmesiyle paylaş!',
+      item: (post) => PostTile(
+        key: ValueKey(post['id']),
+        post: post,
+        onChange: refresh,
+      ),
+    )),
   ]);
 }
 
