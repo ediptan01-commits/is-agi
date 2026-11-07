@@ -1,7 +1,7 @@
 name: is_agi
 description: Mesleki sosyal ag ve is platformu
 publish_to: none
-version: 0.2.5+9
+version: 0.3.0+10
 
 environment:
   sdk: '>=3.4.0 <4.0.0'
