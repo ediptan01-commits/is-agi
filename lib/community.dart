@@ -655,8 +655,7 @@ class _StoryStripState extends State<StoryStrip> {
         ],
       ),
     );
-  }),
-    ]));
+  }
 }
 
 class StoryPage extends StatefulWidget {
