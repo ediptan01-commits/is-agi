@@ -155,7 +155,7 @@ class _CommunityComposerState extends State<CommunityComposer> {
   }
   Future<void> submit() async {
     final body = text.text.trim();
-    if (body.isEmpty && !widget.story) { notice(context, 'Paylaşımına kısa bir not ekle.'); return; }
+    if (body.isEmpty && media == null && !widget.story) { notice(context, 'Bir açıklama veya fotoğraf/video ekle.'); return; }
     if (widget.story && media == null) { notice(context, 'Hikâyene fotoğraf veya video ekle.'); return; }
     setState(() => busy = true);
     try {
@@ -194,6 +194,8 @@ class FeedPage extends StatefulWidget {
 }
 class _FeedPageState extends State<FeedPage> {
   int generation = 0;
+  bool showReels = false;
+  final feedKey = GlobalKey<CommunityListState>();
 
   Future<List<Map<String, dynamic>>> load() async {
     final posts = await db.from('posts').select(
@@ -202,17 +204,45 @@ class _FeedPageState extends State<FeedPage> {
     return posts.map(row).toList();
   }
 
+  void refresh() {
+    if (!mounted) return;
+    setState(() => generation++);
+  }
+
   @override
-  Widget build(BuildContext context) => CommunityList(
-    key: ValueKey('feed-$generation'),
-    load: load,
-    empty: 'Henüz paylaşım yok. İlk gönderiyi ortadaki + düğmesiyle paylaş!',
-    item: (post) => PostTile(
-      key: ValueKey(post['id']),
-      post: post,
-      onChange: () => setState(() => generation++),
+  Widget build(BuildContext context) => Column(children: [
+    Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+      child: Row(children: [
+        Expanded(child: SegmentedButton<bool>(
+          showSelectedIcon: false,
+          segments: const [
+            ButtonSegment(value: false, icon: Icon(Icons.grid_view_rounded), label: Text('Akış')),
+            ButtonSegment(value: true, icon: Icon(Icons.smart_display_outlined), label: Text('Reels')),
+          ],
+          selected: {showReels},
+          onSelectionChanged: (values) => setState(() => showReels = values.first),
+        )),
+        IconButton(
+          tooltip: 'Yenile', icon: const Icon(Icons.refresh),
+          onPressed: refresh,
+        ),
+      ]),
     ),
-  );
+    Expanded(child: showReels
+      ? ReelsPage(key: ValueKey('reels-$generation'))
+      : CommunityList(
+          key: ValueKey('feed-$generation'),
+          load: load,
+          empty: 'Henüz paylaşım yok. İlk gönderiyi ortadaki + düğmesiyle paylaş!',
+          item: (post) => PostTile(
+            key: ValueKey(post['id']),
+            post: post,
+            onChange: refresh,
+          ),
+        ),
+    ),
+  ]);
 }
 
 class CommunityVideo extends StatefulWidget {
